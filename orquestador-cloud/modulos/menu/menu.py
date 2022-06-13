@@ -11,6 +11,7 @@ from ..validador.validador import obtener_memoria
 from ..validador.validador import obtener_fs
 from ..validador.validador import obtener_imagen
 
+from ..administracion.administracion import importar_imagen
 
 import sys
 import json
@@ -162,7 +163,7 @@ class Menu:
         print('''
             -----------------------------------------------------------------------------
 
-            1. Editar informacion
+            3. Editar informacion
 
                 1.1 Borrar topologia
                 1.2 Añadir nodo en topologia
@@ -172,7 +173,7 @@ class Menu:
                 1.6 Añadir imagen 
                 1.7 Regresar
             ''')
-        opcion = obtener_int('[?] Ingrese la opcion: ', minValor=1, maxValor=5)
+        opcion = obtener_int('[?] Ingrese la opcion: ', minValor=1, maxValor=7)
         if(opcion):
             if (opcion == 1):
                 # TODO
@@ -190,7 +191,7 @@ class Menu:
                 # TODO: se guardar tanto en el headNode, como en Openstack (y en otras infraestructuras como AWS si hubiese)
                 pass
             elif (opcion == 6):
-                pass
+                importar_imagen()
             elif (opcion == 7):
                 pass
         else:
