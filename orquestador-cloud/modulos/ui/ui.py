@@ -13,11 +13,15 @@ from ..validador.validador import obtener_imagen
 
 from ..administracion.administracion import importar_imagen
 
+from ..db.db import DB
+
+from ..config.crendentials import config_db_linuxcluster
+
 import sys
 import json
 import webbrowser
 
-class Menu:
+class UI:
     def __init__(self):
         self.topologias = [] # TODO se pasara la data obtenida de la db
         pass
@@ -42,7 +46,13 @@ class Menu:
         opcion = obtener_int('[?] Ingrese la opcion: ', minValor=1, maxValor=5)
         if(opcion):
             if (opcion == 1):
-                # TODO
+                # TODO se lista topologias Linux Cluster
+                db_linuxcluster = DB(config_db_linuxcluster['host'], 
+                                    config_db_linuxcluster['username'], 
+                                    config_db_linuxcluster['password'], 
+                                    config_db_linuxcluster['database'])
+                db_linuxcluster.obtener_topologias()
+                # TODO se lista topologias Openstack
                 pass
             elif (opcion == 2):
                 # TODO
@@ -171,7 +181,8 @@ class Menu:
                 1.4 Aumentar capacidad de slice 
                 1.5 Editar conectividad
                 1.6 Añadir imagen 
-                1.7 Regresar
+                1.7 Añadir keypair
+                1.8 Regresar
             ''')
         opcion = obtener_int('[?] Ingrese la opcion: ', minValor=1, maxValor=7)
         if(opcion):
@@ -188,11 +199,14 @@ class Menu:
                 # TODO: Aumentar capacidad de slice (añadir mas workers)
                 pass
             elif (opcion == 5):
-                # TODO: se guardar tanto en el headNode, como en Openstack (y en otras infraestructuras como AWS si hubiese)
+                # TODO
                 pass
             elif (opcion == 6):
                 importar_imagen()
             elif (opcion == 7):
+                # TODO
+                pass
+            elif (opcion == 8):
                 pass
         else:
             # Si no se especifico una opcion valida, se procede con el bucle

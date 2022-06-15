@@ -17,7 +17,7 @@ def obtener_int(label, maxValor:Optional[int]=None, minValor:Optional[int]=None,
     if (variable.isdigit()):
         # si es que es un digito
         integer = int(variable)
-
+        # validaciones
         if (maxValor and minValor):
             # si es que se especifico un rango, se valida
             return integer if (minValor <= integer <= maxValor) else False
@@ -27,18 +27,24 @@ def obtener_int(label, maxValor:Optional[int]=None, minValor:Optional[int]=None,
         else:
             # si no se especifico un rango, se devuelve el entero de frente
             return integer
-
-        
     else:
         return False
     
 # Modulo: Menu
 
 def obtener_tipo_topologia() -> str:
-    topologias_validas = ['lineal', 'malla', 'arbol', 'anillo', 'bus']
-    variable = input('[?] Ingrese el tipo de topologia '+str(topologias_validas)+': ')
-    if(variable in topologias_validas):
-            return variable
+    topologias_validas = ['(1)lineal', '(2)malla', '(3)arbol', '(4)anillo', '(5)bus']
+    variable = obtener_int('[?] Ingrese el tipo de topologia '+str(topologias_validas)+': ', minValor=1, maxValor=5)
+    if(variable==1):
+        return 'lineal'
+    elif(variable==2):
+        return 'malla'
+    elif(variable==3):
+        return 'arbol'
+    elif(variable==4):
+        return 'anillo'
+    elif(variable==5):
+        return 'bus'
     else:
         raise InputException()
 
@@ -48,20 +54,21 @@ def obtener_infraestructura() -> str or list:
         list: Si escoge 'Linux Cluster' se devuelve los workers en los que desea desplegar
     '''
 
-    infraestructuras_validas = ['Linux Cluster', 'OpenStack']
-    input_tipo_infraestructura = input('[?] Ingrese el tipo de infraestructura '+str(infraestructuras_validas)+': ')
-    if (input_tipo_infraestructura == 'OpenStack'):
+    infraestructuras_validas = ['(1)Linux Cluster', '(2)OpenStack']
+    input_tipo_infraestructura = obtener_int('[?] Ingrese el tipo de infraestructura '+str(infraestructuras_validas)+': ', valoresValidos=[1,2])
+    if (input_tipo_infraestructura == 2):
+        # caso: openstack
         return input_tipo_infraestructura
-    elif (input_tipo_infraestructura == 'Linux Cluster'):
-        workers_validos = ['worker1', 'worker2', 'worker3']
-
+    elif (input_tipo_infraestructura == 1):
+        # caso: linux cluster
+        workers_validos = ['compute-1', 'compute-2', 'compute-3']
         print('    Elija el(los) worker(s) donde desea desplegar su zona de disponibilidad '+str(workers_validos)+': ')
         # TODO mostrar metricas de workers (top o /proc/stat)
         # TODO mostrar recursos disponibles en cada worker (en base a la DB) (se muestra vCPUS asignables, memoria asignable y disco libre)
-
-        input_az = input('[?] Ingrese su opcion sin espacio y separado por comas (ej: worker1,worker2): ')
+        input_az = input('[?] Ingrese su opcion sin espacio y separado por comas (ej: compute-1,compute-2): ')
         input_az = input_az.split(',')
         if(set(input_az).issubset(workers_validos)):
+            # se devuelve la lista de compute-nodes
             return list(set(input_az)) # se pasa antes por set() para eliminar duplicados en la lista
         else:
             raise InputException()
