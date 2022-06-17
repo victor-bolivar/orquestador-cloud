@@ -6,6 +6,7 @@ from string import printable
 from typing import Optional 
 from prettytable import PrettyTable
 
+# Funciones base
 def obtener_int(label, maxValor:Optional[int]=None, minValor:Optional[int]=None, valoresValidos:Optional[list]=None) -> int or False:
     '''
         label: texto a mostrar en la linea de comandos al pedir input
@@ -34,7 +35,7 @@ def obtener_int(label, maxValor:Optional[int]=None, minValor:Optional[int]=None,
 
 def obtener_tipo_topologia() -> str:
     topologias_validas = ['(1)lineal', '(2)malla', '(3)arbol', '(4)anillo', '(5)bus']
-    variable = obtener_int('[?] Ingrese el tipo de topologia '+str(topologias_validas)+': ', minValor=1, maxValor=5)
+    variable = obtener_int('Ingrese el tipo de topologia '+str(topologias_validas)+': ', minValor=1, maxValor=5)
     if(variable==1):
         return 'lineal'
     elif(variable==2):
@@ -55,7 +56,7 @@ def obtener_infraestructura() -> str or list:
     '''
 
     infraestructuras_validas = ['(1)Linux Cluster', '(2)OpenStack']
-    input_tipo_infraestructura = obtener_int('[?] Ingrese el tipo de infraestructura '+str(infraestructuras_validas)+': ', valoresValidos=[1,2])
+    input_tipo_infraestructura = obtener_int('Ingrese el tipo de infraestructura '+str(infraestructuras_validas)+': ', valoresValidos=[1,2])
     if (input_tipo_infraestructura == 2):
         # caso: openstack
         return input_tipo_infraestructura
@@ -65,7 +66,7 @@ def obtener_infraestructura() -> str or list:
         print('    Elija el(los) worker(s) donde desea desplegar su zona de disponibilidad '+str(workers_validos)+': ')
         # TODO mostrar metricas de workers (top o /proc/stat)
         # TODO mostrar recursos disponibles en cada worker (en base a la DB) (se muestra vCPUS asignables, memoria asignable y disco libre)
-        input_az = input('[?] Ingrese su opcion sin espacio y separado por comas (ej: compute-1,compute-2): ')
+        input_az = input('Ingrese su opcion sin espacio y separado por comas (ej: compute-1,compute-2): ')
         input_az = input_az.split(',')
         if(set(input_az).issubset(workers_validos)):
             # se devuelve la lista de compute-nodes
@@ -75,7 +76,7 @@ def obtener_infraestructura() -> str or list:
     else:
         raise InputException()
 
-# Modulo: Administracion
+# Creacion de VM
 
 def obtener_numero_vcpus() -> int or False:
     valores_validos = [1, 2, 4, 8]
@@ -91,13 +92,12 @@ def obtener_numero_vcpus() -> int or False:
     t = t.replace("\n", "\n                ")
     print(t) 
 
-    n_vcpus = obtener_int('[?] Ingrese su opcion: ', valoresValidos=valores_validos)
+    n_vcpus = obtener_int('Ingrese su opcion: ', valoresValidos=valores_validos)
     if n_vcpus:
         return n_vcpus 
     else:
         raise InputException()
     
-
 def obtener_memoria() -> int:
     valores_validos = [1, 2, 4, 8]
 
@@ -112,7 +112,7 @@ def obtener_memoria() -> int:
     t = t.replace("\n", "\n                ")
     print(t) 
 
-    input_memoria = obtener_int('[?] Ingrese su opcion: ', valoresValidos=valores_validos)
+    input_memoria = obtener_int('Ingrese su opcion: ', valoresValidos=valores_validos)
     if input_memoria:
         return input_memoria 
     else:
@@ -124,40 +124,43 @@ def obtener_fs() -> dict or False:
     # TODO si el usuario ingresos valores correctos se devuelve un dict con la data
     pass
 
+# Importar 
+
 def obtener_imagen() -> dict:
     '''
-        Returns:
-            imagen_data (dict): diccionario con el siguiente formato
-                {
-                    'opcion': 'imagen existente|archivo local|url',
+        Dependiendo de la opcion se retorna:
 
-                    ## el resto de parametros varia dependiente de la opcion
-                    # opcion 1:
-                    'rutaHeadnode': '/ruta/donde/esta/la/imagen/en/headnode'
-                    # opcion 2:
-                    'rutaLocal': '/de/donde/se/va/a/subir/la/imagen',
-                    'rutaHeadnode': '/ruta/donde/se/va/a/subir/la/imagen/en/headnode'
-                    # opcion 3:
-                    'url': 'http://cirros.img',
-                    'rutaHeadnode': '/ruta/donde/se/va/a/descargar/la/imagen/en/headnode'
-                }
+        opcion 1:
+        ---
+            {   'opcion':opcion,
+                'nombre':nombre,
+                'categoria':categoria,
+                'ruta':ruta  }
+
+        opcion 2:
+        ---
+            {   'opcion':opcion,
+                'nombre':nombre,
+                'categoria':categoria,
+                'url':url  }
     '''
-    print('[i] Las imagenes disponibles en el sistema son:')
-    # TODO se listan de la DB las imagenes disponibles
     print('''
-        1. Elegir imagen existente
-        2. Importar imagen desde archivo local
-        3. Ingresar URL para importar 
+        1. Seleccionar un archivo local
+        2. Ingresar un URL para ser descargado por el controlador
     ''')
-    opcion = obtener_int('[?] Ingrese la opcion: ', minValor=1, maxValor=3)
+    opcion = obtener_int('Ingrese la opcion: ', valoresValidos=[1,2])
+    nombre = input('Ingrese un nombre para la imagen: ')
+    categorias_validas = ['server','security','networking']
+    categoria = input('Ingrese el nombre de la categoria '+str(categorias_validas)+': ')
     if (opcion == 1):
-        # TODO caso: imagen existente
-        pass
-    elif(opcion == 2):
-        # TODO caso: subir archivo local a head node (usar modulo administracion)
-        pass
-    elif(opcion == 3):
-        # TODO caso: descargar url en el headnode (usar modulo administracion)
-        pass
-    else:
-        raise InputException()
+        ruta = input('Ingrese la ruta del archivo: ')
+        return {'opcion':opcion,
+                'nombre':nombre,
+                'categoria':categoria,
+                'ruta':ruta}
+    elif (opcion == 2):
+        url = input('Ingrese la url de la imagen: ') 
+        return {'opcion':opcion,
+                'nombre':nombre,
+                'categoria':categoria,
+                'url':url}

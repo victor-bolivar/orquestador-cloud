@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # TODO definir un formato mas adecuado para logs
 
 class InputException(Exception):

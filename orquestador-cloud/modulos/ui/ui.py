@@ -11,11 +11,7 @@ from ..validador.validador import obtener_memoria
 from ..validador.validador import obtener_fs
 from ..validador.validador import obtener_imagen
 
-from ..administracion.administracion import importar_imagen
-
-from ..db.db import DB
-
-from ..config.crendentials import config_db_linuxcluster
+from ..enlace.enlace import Enlace
 
 import sys
 import json
@@ -23,8 +19,7 @@ import webbrowser
 
 class UI:
     def __init__(self):
-        self.topologias = [] # TODO se pasara la data obtenida de la db
-        pass
+        self.enlace = Enlace()
 
     ## Opciones del menu principal
 
@@ -43,15 +38,11 @@ class UI:
                 1.5 Listar images disponibles
                 1.6 Regresar
             ''')
-        opcion = obtener_int('[?] Ingrese la opcion: ', minValor=1, maxValor=5)
+        opcion = obtener_int('Ingrese la opcion: ', minValor=1, maxValor=5)
         if(opcion):
             if (opcion == 1):
                 # TODO se lista topologias Linux Cluster
-                db_linuxcluster = DB(config_db_linuxcluster['host'], 
-                                    config_db_linuxcluster['username'], 
-                                    config_db_linuxcluster['password'], 
-                                    config_db_linuxcluster['database'])
-                db_linuxcluster.obtener_topologias()
+                self.db_linuxc.obtener_topologias()
                 # TODO se lista topologias Openstack
                 pass
             elif (opcion == 2):
@@ -73,7 +64,7 @@ class UI:
             
     def grafico_topologia(self):
         # TODO mostrar tabla con datos: idTopologia y nombreTopologia
-        id = input('[?] Ingrese el ID de la topologia: ') 
+        id = input('Ingrese el ID de la topologia: ') 
         # TODO validar que sea un ID valido (int o string)
         # TODO validar que exista el ID
 
@@ -142,7 +133,7 @@ class UI:
     # Opcion 2
 
     def opcion_2(self):
-        # TODO se rellenaria un  objeto de Topologia con los atributos obtenidos
+        # TODO se rellenaria un objeto de Topologia con los atributos obtenidos
         tipo_topologia = None
         infraestructura = None
 
@@ -184,7 +175,7 @@ class UI:
                 1.7 Añadir keypair
                 1.8 Regresar
             ''')
-        opcion = obtener_int('[?] Ingrese la opcion: ', minValor=1, maxValor=7)
+        opcion = obtener_int('Ingrese la opcion: ', minValor=1, maxValor=7)
         if(opcion):
             if (opcion == 1):
                 # TODO
@@ -202,7 +193,7 @@ class UI:
                 # TODO
                 pass
             elif (opcion == 6):
-                importar_imagen()
+                self.enlace.importar_imagen(obtener_imagen())
             elif (opcion == 7):
                 # TODO
                 pass
@@ -225,7 +216,7 @@ class UI:
                 3. Editar informacion
                 4. Salir
             ''')
-            opcion = obtener_int('[?] Ingrese la opcion: ', minValor=1, maxValor=4)
+            opcion = obtener_int('Ingrese la opcion: ', minValor=1, maxValor=4)
             if(opcion):
                 if (opcion == 1):
                     self.opcion_1()
