@@ -164,3 +164,6 @@ def obtener_imagen() -> dict:
                 'nombre':nombre,
                 'categoria':categoria,
                 'url':url}
+
+def input_crear_topologia():
+    pass

@@ -10,6 +10,7 @@ from ..validador.validador import obtener_numero_vcpus
 from ..validador.validador import obtener_memoria
 from ..validador.validador import obtener_fs
 from ..validador.validador import obtener_imagen
+from ..validador.validador import input_crear_topologia
 
 from ..enlace.enlace import Enlace
 
@@ -32,11 +33,11 @@ class UI:
             1. Listar informacion
 
                 1.1 Tabla resumen de todas las topologias
-                1.2 Tabla con detalle de una topologia en particular
-                1.3 JSON con detalle de una topologia en particular
-                1.4 Grafico de topologia en particular
-                1.5 Listar images disponibles
-                1.6 Regresar
+                1.2 JSON con detalle de una topologia en particular
+                1.3 Grafico de topologia en particular
+                1.4 Listar images disponibles
+                1.6 Listar key pair
+                1.5 Regresar
             ''')
         opcion = obtener_int('Ingrese la opcion: ', minValor=1, maxValor=5)
         if(opcion):
@@ -193,7 +194,9 @@ class UI:
                 # TODO
                 pass
             elif (opcion == 6):
-                self.enlace.importar_imagen(obtener_imagen())
+                data = obtener_imagen() # MODULO: VALIDACION
+                result = self.enlace.importar_imagen(data) # MODULO: ENLACE
+                # TODO pasar el result al modulo logging para general el log
             elif (opcion == 7):
                 # TODO
                 pass
