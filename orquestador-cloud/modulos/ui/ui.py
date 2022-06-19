@@ -2,6 +2,7 @@
 
 from ..logging.Exceptions import InputException
 
+
 from ..validador.validador import obtener_int
 from ..validador.validador import obtener_tipo_topologia
 from ..validador.validador import obtener_infraestructura
@@ -11,6 +12,13 @@ from ..validador.validador import obtener_memoria
 from ..validador.validador import obtener_fs
 from ..validador.validador import obtener_imagen
 from ..validador.validador import input_crear_topologia
+from ..validador.validador import id_topologia_eliminar
+from ..validador.validador import id_topologia_nodo_adicional
+from ..validador.validador import validar_eliminar_nodo
+from ..validador.validador import validar_aumentar_slice
+from ..validador.validador import validar_conectividad
+from ..validador.validador import validar_keypair
+
 
 from ..enlace.enlace import Enlace
 
@@ -21,7 +29,6 @@ import webbrowser
 class UI:
     def __init__(self):
         self.enlace = Enlace()
-
     ## Opciones del menu principal
 
     # Opcion 1
@@ -167,30 +174,39 @@ class UI:
 
             3. Editar informacion
 
-                1.1 Borrar topologia
-                1.2 Añadir nodo en topologia
-                1.3 Eliminar nodo en topologia
+                1.1 Borrar topología
+                1.2 Añadir nodo en topología
+                1.3 Eliminar nodo en topología
                 1.4 Aumentar capacidad de slice 
                 1.5 Editar conectividad
                 1.6 Añadir imagen 
                 1.7 Añadir keypair
                 1.8 Regresar
             ''')
-        opcion = obtener_int('Ingrese la opcion: ', minValor=1, maxValor=7)
+        opcion = obtener_int('Ingrese la opción: ', minValor=1, maxValor=7)
         if(opcion):
             if (opcion == 1):
                 # TODO
+                borrado = id_topologia_eliminar()
+                eliminar = self.enlace.eliminar_topologia(borrado)
                 pass
             elif (opcion == 2):
-                # TODO
+                agre = id_topologia_nodo_adicional()
+                agregar = self.enlace.agregar_nodo(agre)
                 pass
             elif (opcion == 3):
                 # TODO
+                nodo = validar_eliminar_nodo()
+                eliminar_nodo = self.enlace.eliminar_nodo(nodo)
                 pass
             elif (opcion == 4):
                 # TODO: Aumentar capacidad de slice (añadir mas workers)
+                slice = validar_aumentar_slice()
+                eliminar_nodo = self.enlace.aumentar_slice(slice)
                 pass
             elif (opcion == 5):
+                conectividad = validar_conectividad()
+                conectar_slice_internet =self.enlace.conectar_slice_internet(conectividad)
                 # TODO
                 pass
             elif (opcion == 6):
@@ -199,6 +215,8 @@ class UI:
                 # TODO pasar el result al modulo logging para general el log
             elif (opcion == 7):
                 # TODO
+                keypair = validar_keypair()
+                agregar_keypair =self.enlace.agregar_key_apir(keypair)
                 pass
             elif (opcion == 8):
                 pass
@@ -219,7 +237,7 @@ class UI:
                 3. Editar informacion
                 4. Salir
             ''')
-            opcion = obtener_int('Ingrese la opcion: ', minValor=1, maxValor=4)
+            opcion = obtener_int('Ingrese la opción: ', minValor=1, maxValor=4)
             if(opcion):
                 if (opcion == 1):
                     self.opcion_1()

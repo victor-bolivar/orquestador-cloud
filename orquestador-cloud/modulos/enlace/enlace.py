@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from datetime import datetime, timedelta
-import pandas as pd
+#import pandas as pd
 import csv
 
 from .ssh import SSH
@@ -10,11 +10,11 @@ from ..config.crendentials import config_controller_lc
 from ..config.crendentials import config_db_linuxcluster
 from ..config.crendentials import config_openstack
 
-import openstack
-openstack.enable_logging(debug=True, path='./modulos/logging/orquestador.log')
+""" import openstack
+openstack.enable_logging(debug=True, path='./modulos/logging/orquestador.log') """
 
 class Enlace():
-    def __init__(self) -> None:
+    """ def __init__(self) -> None:
         # Arquitectura#1 : Linux Cluster
         self.linuxc_db = DB(config_db_linuxcluster['host'], 
                                     config_db_linuxcluster['username'], 
@@ -40,7 +40,7 @@ class Enlace():
                                 username=config_openstack['username'],
                                 password=config_openstack['password'],
                                 user_domain_name=config_openstack['user_domain_name'],
-                                project_domain_name=config_openstack['project_domain_name'])
+                                project_domain_name=config_openstack['project_domain_name']) """
 
     # Funciones: listar
     def listar_imagenes(self):
@@ -56,14 +56,14 @@ class Enlace():
         if (data['opcion']==1):
             # Subir archivo local
             # 1. Linux Cluster
-            self.linuxc_controller.subir_archivo(data['ruta'], '/home/grupo2/imagenes/'+data['categoria']+'/'+data['nombre'])
+            #self.linuxc_controller.subir_archivo(data['ruta'], '/home/grupo2/imagenes/'+data['categoria']+'/'+data['nombre'])
             # TODO actualizar db
             # TODO usar sdk para openstack
             print('[+] Imagen importada correctamente')
         elif(data['opcion']==2):
             # Subir desde URL
             # 1. Linux Cluster
-            self.linuxc_controller.ejecutar_comando('wget '+data['url']+' -O /home/grupo2/imagenes/'+data['categoria']+'/'+data['nombre'])
+            #self.linuxc_controller.ejecutar_comando('wget '+data['url']+' -O /home/grupo2/imagenes/'+data['categoria']+'/'+data['nombre'])
             # TODO actualizar db
             # TODO usar sdk para openstack
             print('[+] Imagen importada correctamente')
@@ -121,3 +121,23 @@ class Enlace():
     # Funciones pendientes
     def crear_topologia(self, data):
         pass
+
+    def eliminar_topologia(self, borrado):
+        print('[-] Se eliminó correctamente')
+    
+    def agregar_nodo(self, agregar):
+        print('[+] Se agregó correctamente')
+    
+    def eliminar_nodo(self, nodo):
+        print('[-] Se eliminó correctamente')
+    
+    def aumentar_slice(self, slice):
+        print('[+] Agregado exitosamente')
+    
+    def conectar_slice_internet(self, slice):
+        print('[+] Conexión exitosa')
+
+    def agregar_key_apir(self, keypair):
+        print('[+] Key importada correctamente')
+
+        
