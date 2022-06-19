@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from datetime import datetime, timedelta
-import pandas as pd
+#import pandas as pd
 import csv
 
 from .ssh import SSH
@@ -10,8 +10,8 @@ from ..config.crendentials import config_controller_lc
 from ..config.crendentials import config_db_linuxcluster
 from ..config.crendentials import config_openstack
 
-import openstack
-openstack.enable_logging(debug=True, path='./modulos/logging/orquestador.log')
+#import openstack
+#openstack.enable_logging(debug=True, path='./modulos/logging/orquestador.log')
 
 class Enlace():
     def __init__(self) -> None:
@@ -34,13 +34,13 @@ class Enlace():
         self.linuxc_worker3 = None
         self.linuxc_ofs = None
         # Arquitectura#2 : OpenStack
-        self.openstacksdk = openstack.connect(
+        """ self.openstacksdk = openstack.connect(
                                 auth_url=config_openstack['auth_url'],
                                 project_name=config_openstack['project_name'],
                                 username=config_openstack['username'],
                                 password=config_openstack['password'],
                                 user_domain_name=config_openstack['user_domain_name'],
-                                project_domain_name=config_openstack['project_domain_name'])
+                                project_domain_name=config_openstack['project_domain_name']) """
 
     # Funciones: listar
     def listar_imagenes(self):
@@ -140,5 +140,19 @@ class Enlace():
 
     def agregar_key_apir(self, keypair):
         print('[+] Key importada correctamente')
+
+    def obtener_topologias():
+        x = PrettyTable()
+        x.field_names = ["ID", "Nombre", "Tipo", "Infraestructura"]
+        x.add_row([1, "Mi 1ra Topología", "Malla", "Linux Cluster"])
+        x.add_row([2, "Primera Topología", "Lineal", "Linux Cluster"])
+        x.add_row([3, "My first Topology", "Anillo", "Linux Cluster"])
+        #Espaciado antes de imprimar la tabla
+        x = '\n'+ str(x)
+        x = x.replace("\n", "\n                ")
+        print(x)
+
+
+
 
         

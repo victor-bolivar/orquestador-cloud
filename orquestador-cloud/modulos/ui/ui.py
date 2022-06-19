@@ -2,7 +2,7 @@
 
 from ..logging.Exceptions import InputException
 
-
+from prettytable import PrettyTable
 from ..validador.validador import obtener_int
 from ..validador.validador import obtener_tipo_topologia
 from ..validador.validador import obtener_infraestructura
@@ -41,36 +41,240 @@ class UI:
 
             1. Listar informacion
 
-                1.1 Tabla resumen de todas las topologias
-                1.2 JSON con detalle de una topologia en particular
-                1.3 Grafico de topologia en particular
-                1.4 Listar images disponibles
-                1.6 Listar key pair
-                1.5 Regresar
+                1. Tabla resumen de todas las topologías
+                2. JSON con detalle de una topología en particular
+                3. Gráfico de topología en particular
+                4. Listar imágenes disponibles
+                5. Listar Key Pair
+                6. Regresar
+
             ''')
         opcion = obtener_int('Ingrese la opcion: ', minValor=1, maxValor=5)
         if(opcion):
             if (opcion == 1):
-                # TODO se lista topologias Linux Cluster
-                self.db_linuxc.obtener_topologias()
-                # TODO se lista topologias Openstack
-                pass
+
+                x = PrettyTable()
+                x.field_names = ["ID", "Nombre", "Tipo", "Infraestructura"]
+                x.add_row([1, "Mi 1ra Topología", "Malla", "Linux Cluster"])
+                x.add_row([2, "Primera Topología", "Lineal", "Linux Cluster"])
+                x.add_row([3, "My first Topology", "Anillo", "Linux Cluster"])
+                #Espaciado antes de imprimar la tabla
+                x = '\n'+ str(x)
+                x = x.replace("\n", "\n                ")
+                print(x)
+
+            
+                
             elif (opcion == 2):
-                # TODO
-                pass
+                vart = True
+                while vart:
+                    opcion_detalle = obtener_int('[?] Ingrese el ID de la Topología: ', minValor=1, maxValor=3)
+                    if (opcion_detalle):
+                        if(opcion_detalle==1):
+                            print('''
+                                {
+                                    "ID": 1,
+                                    "Nombre": "Mi 1ra Topología",
+                                    "Tipo": "Malla",
+                                    "cantidad de enlaces": "4",
+                                    "vlans"[
+                                        {
+                                            "idvlan":"1",
+                                            "numeroVlan": "10",
+                                            "red": "192.168.10.0/24"
+                                            "dhcpServer": "192.168.10.2",
+                                            "gateway": "192.168.10.1",
+                                        },
+                                        {
+                                            "idvlan":"2",
+                                            "numeroVlan": "20"
+                                            "red": "192.168.20.0/24"
+                                            "dhcpServer": "192.168.20.2",
+                                            "gateway": "192.168.20.1",
+                                        },
+                                        {
+                                            "idvlan":"3",
+                                            "numeroVlan": "30"
+                                            "red": "192.168.30.0/24"
+                                            "dhcpServer": "192.168.30.2",
+                                            "gateway": "192.168.30.1",
+                                        },
+                                    ]
+                                    "cantidad de enlaces": "4",
+                                    "vms": [
+                                        {   
+                                            "idVM": "12",
+                                            "nombre": "vm80",
+                                            "vlan": 10
+                                            "ip": "192.168.10.10",
+                                            "gateway": "192.168.10.1",
+                                            "keypair": "key pair 1"
+                                        },
+                                        {   
+                                            "idVM": "12",
+                                            "nombre": "vm80",
+                                            "vlan": 20
+                                            "ip": "192.168.20.10",
+                                            "gateway": 192.168.20.1,
+                                            "keypair": "key pair 1"
+                                        },
+                                        {   
+                                            "idVM" : "12",
+                                            "nombre" : "vm80",
+                                            "vlan": 30
+                                            "ip": "192.168.30.10",
+                                            "gateway": 192.168.30.1,
+                                            "keypair" : "key pair 1"
+                                        },
+                                    ]
+                                }                                 
+                            ''')
+                            break
+                        if(opcion_detalle==2):
+                            print('''
+                                {
+                                    "ID": 1,
+                                    "Nombre": "Primera Topología",
+                                    "Tipo": "Malla",
+                                    "dhcpServer": "x.x.x.x",
+                                    "cantidad de enlaces": "4",
+                                    "vlans"[
+                                        {
+                                            "idvlan":"1",
+                                            "numeroVlan": "10"
+                                        },
+                                        {
+                                            "idvlan":"2",
+                                            "numeroVlan": "20"
+                                        },
+                                        {
+                                            "idvlan":"3",
+                                            "numeroVlan": "30"
+                                        },
+                                    ]
+                                    "vms": [
+                                        {   
+                                            "idVM": "12",
+                                            "nombre": "vm80",
+                                            "vlan": 10
+                                            "ip": "192.168.10.20",
+                                            "gateway": "192.168.10.1",
+                                            "keypair": "key pair 1"
+                                        },
+                                        {   
+                                            "idVM": "12",
+                                            "nombre": "vm80",
+                                            "vlan": 20
+                                            "ip": "192.168.20.20",
+                                            "gateway": 192.168.20.1,
+                                            "keypair": "key pair 1"
+                                        },
+                                        {   
+                                            "idVM" : "12",
+                                            "nombre" : "vm80",
+                                            "vlan": 30
+                                            "ip": "192.168.30.20",
+                                            "gateway": 192.168.30.1,
+                                            "keypair" : "key pair 1"
+                                        },
+                                    ]                                    
+                                },                            
+                            ''')
+                            break
+                        if(opcion_detalle==3):
+                            print('''
+                                {
+                                    "ID": 1,
+                                    "Nombre": "My first Topology",
+                                    "Tipo": "Malla",
+                                    "gateway": "192.168.0.255",
+                                    "dhcpServer": "x.x.x.x",
+                                    "cantidad de enlaces": "4",
+                                    "vlans"[
+                                        {
+                                            "idvlan":"1",
+                                            "numeroVlan": "10"
+                                        },
+                                        {
+                                            "idvlan":"2",
+                                            "numeroVlan": "20"
+                                        },
+                                        {
+                                            "idvlan":"3",
+                                            "numeroVlan": "30"
+                                        },
+                                    ]
+                                    "vms": [
+                                        {   
+                                            "idVM": "12",
+                                            "nombre": "vm80",
+                                            "vlan": 10
+                                            "ip": "192.168.10.30",
+                                            "gateway": "192.168.10.1",
+                                            "keypair": "key pair 1"
+                                        },
+                                        {   
+                                            "idVM": "12",
+                                            "nombre": "vm80",
+                                            "vlan": 20
+                                            "ip": "192.168.20.30",
+                                            "gateway": 192.168.20.1,
+                                            "keypair": "key pair 1"
+                                        },
+                                        {   
+                                            "idVM" : "12",
+                                            "nombre" : "vm80",
+                                            "vlan": 30
+                                            "ip": "192.168.30.30",
+                                            "gateway": 192.168.30.1,
+                                            "keypair" : "key pair 1"
+                                        },
+                                    ]           
+                                }
+                            ''')
+                            break
+                            
+                    else:
+                        print('[x] Ingrese una opción válida: ')
+                
             elif (opcion == 3):
-                # TODO
-                pass
-            elif (opcion == 4):
                 self.grafico_topologia()
+
+            elif (opcion == 4):
+                #############
+                #print('''
+                #    -----------------------------------------------------------------------------
+                #    Lista de imágenes sisponibles
+
+                #''')
+                x3 = PrettyTable()
+                x3.field_names = ["Tipo de imagen", "Nombre"]
+                x3.add_row(["Networking", "CiscoIoS"])
+                x3.add_row(["Server", "CiscoIOS XRv"])
+                x3.add_row(["Security", "Ubuntu 20.04"])
+                x3.add_row(["Security", "Ubuntu 18.04"])
+                #print()
+                x3 = '\n'+ str(x3)
+                x3 = x3.replace("\n", "\n                ")
+                #print(x)
+                print(x3)
+                
             elif (opcion == 5):
-                # TODO
-                pass
+                x = PrettyTable()
+                x.field_names = ["ID", "Nombre"]
+                x.add_row([1, "key pair 1"])
+                x.add_row([2, "key pair 2"])
+                x.add_row([3, "key pair 3"])
+                #Espaciado antes de imprimar la tabla
+                x = '\n'+ str(x)
+                x = x.replace("\n", "\n                ")
+                print(x)
+
             elif (opcion == 6):
                 pass
         else:
             # Si no se especifico una opcion valida, se procede con el bucle
-            print('[x] Ingrese una opcion valida')
+            print('[x] Ingrese una opción válida')
             
     def grafico_topologia(self):
         # TODO mostrar tabla con datos: idTopologia y nombreTopologia
