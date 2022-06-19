@@ -120,7 +120,8 @@ class Enlace():
     
     # Funciones pendientes
     def crear_topologia(self, data):
-        pass
+        print('[+] Se creó correctamente')
+        
 
     def eliminar_topologia(self, borrado):
         print('[-] Se eliminó correctamente')

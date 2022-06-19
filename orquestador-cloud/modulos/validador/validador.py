@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from ast import Str
+import re
 import string
 from ..logging.Exceptions import InputException
 
@@ -119,6 +120,80 @@ def obtener_memoria() -> int:
         return input_memoria 
     else:
         raise InputException()
+def obtener_almacenamiento()-> int:
+    print(' A continuación definirá la cantidad de almacenamiento y tipo de almacenamiento en base a sus requerimientos')
+    print(' 1. Si piensa usar dicha VM como un switch (donde no instalaria muchos paquetes adicionales)')
+    print(' 2. Si planea usar la máquina como una base de datos o una máquina virtual') 
+    print('donde constantemente se descargarìa archivos de gran tamaño)')
+    var123 = obtener_int('Seleccionar la opción adecuada para su escenario: ', minValor=1, maxValor=2)
+    if (var123):
+        if(var123 == 1):
+            return var123
+        elif(var123 == 2):
+            almac1 = input('Ingresar la cantidad de almacenamiento (Mínimo:10 GB | Máximo: 80 GB):')
+            return var123
+        pass
+    else:
+        print('[x]Ingrese una opción válida')
+
+def obtener_imagenvm() -> int:
+    x3 = PrettyTable()
+    x3.field_names = ["Opción", "Tipo de imagen", "Nombre"]
+    x3.add_row([1,"Networking", "CiscoIoS"])
+    x3.add_row([2,"Networking", "CiscoIOS XRv"])
+    x3.add_row([3,"Server", "Ubuntu 20.04"])
+    x3.add_row([4,"Server", "Ubuntu 18.04"])
+    x3 = '\n'+ str(x3)
+    x3 = x3.replace("\n", "\n                ")
+    print('''
+                    
+    Lista de imágenes disponibles
+
+    ''')
+    print(x3)
+    print()
+    print('[?] Seleccione la imagen para la VM')
+    ima1 = obtener_int(' Ingrese la opción: ', minValor=1, maxValor=4)
+    opcion110 = input('[?] Ingresar el nombre de la VM:')
+    if(ima1):
+        return ima1
+    else:
+        print('[x] Ingrese una opción válida')    
+
+def obtener_keypair() -> int:
+    x345 = PrettyTable()
+    x345.field_names = ["Opción", "Nombre"]
+    x345.add_row([1, "Key pair 1" ])
+    x345.add_row([2, "Key pair 2"])
+    x345.add_row([3, "Key pair 3"])
+    x345.add_row([4, "Key pair 4"])
+    x345 = '\n'+ str(x345)
+    x345 = x345.replace("\n", "\n                ")
+    print('''
+                    
+    Lista de Key Pair
+
+    ''')
+    print(x345)
+    print()
+    print('[?] Seleccione el key pair para el acceso a la VM')
+    keypair1 = obtener_int('Ingrese la opción: ', minValor=1, maxValor=4)
+    if(keypair1):
+        if(keypair1 == 1 or keypair1 == 2 or keypair1 == 3 or keypair1 == 4):
+            return keypair1
+    else:
+        print('[x] Ingrese una opción válida')
+
+def conectar_internet() -> int:
+    print('[?]¿Desea que la topología tenga conexión a Internet?')
+    print('(1) Sí ')
+    print('(2) No ')
+    keypair1 = obtener_int('Ingrese la opción: ', minValor=1, maxValor=2)
+    if (keypair1):
+        return keypair1
+        pass
+    else:
+        print('[x] Ingrese una opción válida')
 
 def obtener_fs() -> dict or False:
     # TODO se muestra las dos opciones (con sus descripciones): Raw o CopyOnWrite

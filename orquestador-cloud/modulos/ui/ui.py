@@ -18,8 +18,10 @@ from ..validador.validador import validar_eliminar_nodo
 from ..validador.validador import validar_aumentar_slice
 from ..validador.validador import validar_conectividad
 from ..validador.validador import validar_keypair
-
-
+from ..validador.validador import obtener_almacenamiento
+from ..validador.validador import obtener_imagenvm
+from ..validador.validador import obtener_keypair
+from ..validador.validador import conectar_internet
 from ..enlace.enlace import Enlace
 
 import sys
@@ -151,12 +153,39 @@ class UI:
             infraestructura = obtener_infraestructura()
 
             # TODO se pide el numero de vms a crear y para cada vm se piden los siguentes datos
+            print()
+            print('A continuación se le pedirá definir las capacidades de las 3 VM')
+            print('')
+            print('---------------------Configuración de la VM 1-----------------------------')
             n_vcpus = obtener_numero_vcpus()
             memoria = obtener_memoria()
+            almacenamiento = obtener_almacenamiento()
+            imagen = obtener_imagenvm()
+            conexion = conectar_internet()
+            keypair1 = obtener_keypair()
+            
             # fs = obtener_fs()
             # imagen = obtener_imagen()
 
             # TODO preguntar que VLANs desea inteconectar
+            print('')
+            print('---------------------Configuración de la VM 2-----------------------------')
+            n_vcpus = obtener_numero_vcpus()
+            memoria = obtener_memoria()
+            almacenamiento = obtener_almacenamiento()
+            imagen = obtener_imagenvm()
+            conexion = conectar_internet()
+            keypair2 = obtener_keypair()
+
+            print('')
+            print('---------------------Configuración de la VM 3-----------------------------')
+            n_vcpus = obtener_numero_vcpus()
+            memoria = obtener_memoria()
+            almacenamiento = obtener_almacenamiento()
+            imagen = obtener_imagenvm()
+            conexion = conectar_internet()
+            keypair3 = obtener_keypair()
+            topo = self.enlace.crear_topologia(keypair3)
 
         except InputException as inputException:
             print(inputException)
