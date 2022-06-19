@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from datetime import datetime, timedelta
-#import pandas as pd
+import pandas as pd
 import csv
 
 from .ssh import SSH
@@ -10,11 +10,11 @@ from ..config.crendentials import config_controller_lc
 from ..config.crendentials import config_db_linuxcluster
 from ..config.crendentials import config_openstack
 
-""" import openstack
-openstack.enable_logging(debug=True, path='./modulos/logging/orquestador.log') """
+import openstack
+openstack.enable_logging(debug=True, path='./modulos/logging/orquestador.log')
 
 class Enlace():
-    """ def __init__(self) -> None:
+    def __init__(self) -> None:
         # Arquitectura#1 : Linux Cluster
         self.linuxc_db = DB(config_db_linuxcluster['host'], 
                                     config_db_linuxcluster['username'], 
@@ -40,7 +40,7 @@ class Enlace():
                                 username=config_openstack['username'],
                                 password=config_openstack['password'],
                                 user_domain_name=config_openstack['user_domain_name'],
-                                project_domain_name=config_openstack['project_domain_name']) """
+                                project_domain_name=config_openstack['project_domain_name'])
 
     # Funciones: listar
     def listar_imagenes(self):
