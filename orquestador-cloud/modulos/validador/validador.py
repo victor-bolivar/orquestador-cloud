@@ -263,7 +263,7 @@ def id_topologia_eliminar() -> int:
     x33.add_row(["7", "Topología 4"])
     x33 = '\n'+ str(x33)
     x33 = x33.replace("\n", "\n                ")
-    print('''Lista de las topologías actuales'''   
+    print('''\nLista de las topologías actuales'''   
     )
     print(x33)
     print('')   
@@ -295,7 +295,7 @@ def id_topologia_nodo_adicional () -> int:
     )
     print(x23)
     print('')
-    opcion1 = obtener_int(' Ingrese la opción: ', minValor=1, maxValor=7)
+    opcion1 = obtener_int('Ingrese la opción: ', minValor=1, maxValor=7)
 
     if(opcion1):
         if (opcion1 == 1 or opcion1 == 2 or opcion1 == 3 or opcion1 == 4 or opcion1 == 5
@@ -308,19 +308,16 @@ def id_topologia_nodo_adicional () -> int:
             x23.add_row(["4", "Nodo 3"])
             x23 = '\n'+ str(x23)
             x23 = x23.replace("\n", "\n                ")
-            print('''
-            A continuación se listan los nodos actuales:
-            '''   
+            print('''\nA continuación se listan los nodos actuales:'''   
             )
             print(x23)
             print('')
 
             n_vcpus = obtener_numero_vcpus()
             memoria = obtener_memoria()
-            print(' A continuación definirá la cantidad de almacenamiento y tipo de almacenamiento en base a sus requerimientos')
-            print(' 1. Si piensa usar dicha VM como un switch (donde no instalaria muchos paquetes adicionales)')
-            print(' 2. Si planea usar la máquina como una base de datos o una máquina virtual donde constantemente') 
-            print(' se descargarìa archivos de gran tamaño)')
+            print('A continuación definirá la cantidad de almacenamiento y tipo de almacenamiento en base a sus requerimientos')
+            print('     1. Si piensa usar dicha VM como un switch (donde no instalaria muchos paquetes adicionales)')
+            print('     2. Si planea usar la máquina como una base de datos o una máquina virtual donde constantemente se descargarìa archivos de gran tamaño)') 
             var123 = obtener_int('Seleccionar la opción adecuada para su escenario: ', minValor=1, maxValor=2)
 
             if (var123):
@@ -348,11 +345,7 @@ def id_topologia_nodo_adicional () -> int:
                     x345.add_row([4, "Key pair 4"])
                     x345 = '\n'+ str(x345)
                     x345 = x345.replace("\n", "\n                ")
-                    print('''
-                                
-                    Lista de Key Pair
-
-                            ''')
+                    print('''\nLista de Key Pair''')
                     print(x345)
                     print()
                     print('Seleccione el key pair para el acceso a la VM')
@@ -458,11 +451,9 @@ def validar_aumentar_slice() -> int:
 
 
 def validar_conectividad() -> int:
-    print('''
-        A continuación de listan las topologías actuales:
+    print('''\nA continuación de listan las topologías actuales:
         1. Conexión a Internet
-        2. Conexión entre topologías
-                '''   
+        2. Conexión entre topologías'''   
     )
     opcion1 = obtener_int('Ingrese la opción: ', minValor=1, maxValor=7)
     if (opcion1):
@@ -478,7 +469,7 @@ def validar_conectividad() -> int:
             x44.add_row(["7", "Topología 4","10.0.0.0/24" ])
             x44 = '\n'+ str(x44)
             x44 = x44.replace("\n", "\n                ")
-            print('Seleccionar la topología que desea conectar a Internet')
+            print('\nSeleccionar la topología que desea conectar a Internet')
             print(x44)
             print('')
             opcion2 = obtener_int('Ingrese el ID: ', minValor=1, maxValor=7)
@@ -500,8 +491,7 @@ def validar_conectividad() -> int:
             x55.add_row(["7", "Topología 4","10.0.0.0/24" ])
             x55 = '\n'+ str(x55)
             x55 = x55.replace("\n", "\n                ")
-            print('''
-                    Seleccionar las topologías que desean conectar
+            print('''\nSeleccionar las topologías que desean conectar
                     ''')
             print(x55)
             print('')

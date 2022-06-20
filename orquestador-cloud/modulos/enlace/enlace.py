@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from datetime import datetime, timedelta
+from prettytable import PrettyTable
 #import pandas as pd
 import csv
 
@@ -127,16 +128,16 @@ class Enlace():
         print('[-] Se eliminó correctamente')
     
     def agregar_nodo(self, agregar):
-        print('[+] Se agregó correctamente')
+        print('\n[+] Se agregó correctamente')
     
     def eliminar_nodo(self, nodo):
-        print('[-] Se eliminó correctamente')
+        print('\n[-] Se eliminó correctamente')
     
     def aumentar_slice(self, slice):
-        print('[+] Agregado exitosamente')
+        print('\n[+] Agregado exitosamente')
     
     def conectar_slice_internet(self, slice):
-        print('[+] Conexión exitosa')
+        print('\n[+] Conexión exitosa')
 
     def agregar_key_apir(self, keypair):
         print('[+] Key importada correctamente')
