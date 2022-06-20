@@ -68,7 +68,7 @@ class UI:
             elif (opcion == 2):
                 vart = True
                 while vart:
-                    opcion_detalle = obtener_int('[?] Ingrese el ID de la Topología: ', minValor=1, maxValor=3)
+                    opcion_detalle = obtener_int('Ingrese el ID de la Topología: ', minValor=1, maxValor=3)
                     if (opcion_detalle):
                         if(opcion_detalle==1):
                             print('''
@@ -248,11 +248,11 @@ class UI:
 
                 #''')
                 x3 = PrettyTable()
-                x3.field_names = ["Tipo de imagen", "Nombre"]
-                x3.add_row(["Networking", "CiscoIoS"])
-                x3.add_row(["Server", "CiscoIOS XRv"])
-                x3.add_row(["Security", "Ubuntu 20.04"])
-                x3.add_row(["Security", "Ubuntu 18.04"])
+                x3.field_names = ["ID","Tipo de imagen", "Nombre"]
+                x3.add_row(["1", "Networking", "CiscoIoS"])
+                x3.add_row(["2","Server", "CiscoIOS XRv"])
+                x3.add_row(["3","Security", "Ubuntu 20.04"])
+                x3.add_row(["4","Security", "Ubuntu 18.04"])
                 #print()
                 x3 = '\n'+ str(x3)
                 x3 = x3.replace("\n", "\n                ")
@@ -355,17 +355,17 @@ class UI:
             print() # se imprime nueva linea en menu
             tipo_topologia = obtener_tipo_topologia()
             infraestructura = obtener_infraestructura()
+            conexion = conectar_internet()
 
             # TODO se pide el numero de vms a crear y para cada vm se piden los siguentes datos
             print()
             print('A continuación se le pedirá definir las capacidades de las 3 VM')
             print('')
-            print('---------------------Configuración de la VM 1-----------------------------')
+            print('---------------------Configuración de la VM 1-----------------------------\n')
             n_vcpus = obtener_numero_vcpus()
             memoria = obtener_memoria()
             almacenamiento = obtener_almacenamiento()
             imagen = obtener_imagenvm()
-            conexion = conectar_internet()
             keypair1 = obtener_keypair()
             
             # fs = obtener_fs()
@@ -373,21 +373,19 @@ class UI:
 
             # TODO preguntar que VLANs desea inteconectar
             print('')
-            print('---------------------Configuración de la VM 2-----------------------------')
+            print('---------------------Configuración de la VM 2-----------------------------\n')
             n_vcpus = obtener_numero_vcpus()
             memoria = obtener_memoria()
             almacenamiento = obtener_almacenamiento()
             imagen = obtener_imagenvm()
-            conexion = conectar_internet()
             keypair2 = obtener_keypair()
 
             print('')
-            print('---------------------Configuración de la VM 3-----------------------------')
+            print('---------------------Configuración de la VM 3-----------------------------\n')
             n_vcpus = obtener_numero_vcpus()
             memoria = obtener_memoria()
             almacenamiento = obtener_almacenamiento()
             imagen = obtener_imagenvm()
-            conexion = conectar_internet()
             keypair3 = obtener_keypair()
             topo = self.enlace.crear_topologia(keypair3)
 
