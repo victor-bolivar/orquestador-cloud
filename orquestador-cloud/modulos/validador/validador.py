@@ -64,7 +64,6 @@ class Validador():
                                 'nombre': str,
                                 'tipo': str, 
                                 'infraestructura': dict,
-                                'internet': boolean,
                                 'vms': list
                             }
 
@@ -94,7 +93,6 @@ class Validador():
                             "2"
                         ]
                     },
-                    "internet": true,
                     "vms": [
                         {
                             "n_vcpus": 1,
@@ -102,7 +100,8 @@ class Validador():
                             "filesystem": {
                                 "filesystem": "CopyOnWrite"
                             },
-                            "imagen_id": 1
+                            "imagen_id": 1,
+                            "internet": true,
                         },
                         {
                             "n_vcpus": 4,
@@ -111,7 +110,8 @@ class Validador():
                                 "filesystem": "Raw",
                                 "size": 10
                             },
-                            "imagen_id": 3
+                            "imagen_id": 3,
+                            "internet": true,
                         },
                         {
                             "n_vcpus": 8,
@@ -120,7 +120,8 @@ class Validador():
                                 "filesystem": "Raw",
                                 "size": 50
                             },
-                            "imagen_id": 3
+                            "imagen_id": 3,
+                            "internet": false,
                         }
                     ]
                 }
@@ -128,7 +129,6 @@ class Validador():
         '''
         nombre = input('\nIngrese el nombre de la topologia: ')
         tipo = self.obtener_tipo_topologia()
-        internet = self.conectar_internet()
         infraestructura = self.obtener_infraestructura(workers_info)
         # datos de las 3 VMs a crear (numero predefinido para las topologias predefinidas)
         print()
@@ -141,18 +141,20 @@ class Validador():
             memoria = self.obtener_memoria()
             filesystem = self.obtener_fs()
             imagen_id = self.obtener_imagen(tabla_imagenes)
+            internet = self.conectar_internet()
+            print()
             vms.append({
                 'n_vcpus': n_vcpus,
                 'memoria': memoria,
                 'filesystem': filesystem,
-                'imagen_id': imagen_id
+                'imagen_id': imagen_id,
+                'internet': internet
             })
 
         return {
             'nombre': nombre,
             'tipo': tipo,
             'infraestructura': infraestructura,
-            'internet': internet,
             'vms': vms
         }
 
@@ -213,6 +215,7 @@ class Validador():
             # caso: openstack
 
             print(workers_info['openstack'])
+            print()
             print(
                 'Elija el(los) worker(s) donde desea desplegar su zona de disponibilidad ')
             input_az = input(
@@ -230,6 +233,7 @@ class Validador():
             # caso: linux cluster
 
             print(workers_info['linux_cluster'])
+            print()
             print(
                 'Elija el(los) worker(s) donde desea desplegar su zona de disponibilidad ')
             input_az = input(
@@ -250,7 +254,7 @@ class Validador():
 
     def conectar_internet(self) -> int:
         opcion = self.obtener_int(
-            '¿Desea que la topología tenga conexión a Internet? (1. Si | 2. No): ', minValor=1, maxValor=2)
+            '¿Desea que el nodo tenga conexión a Internet? (1. Si | 2. No): ', minValor=1, maxValor=2)
         if (opcion == 1):
             return True
         elif (opcion == 2):
@@ -342,7 +346,7 @@ class Validador():
         else:
             print('[x] Ingrese una opción válida')
 
-    def obtener_imagen(self, tabla_imagenes):
+    def obtener_imagen(self, tabla_imagenes) -> int:
         '''
             tabla_imagenes: tabla que contiene las imagenes disponibles en el sistema
         '''
@@ -397,19 +401,21 @@ class Validador():
                     'categoria': categoria,
                     'url': url}
 
-    def agregar_nodo(self, tabla_imagenes):
+    def agregar_nodo(self, tabla_imagenes) -> dict:
         id_topologia = self.obtener_int('\nIngrese el ID: ')
         print()
         n_vcpus = self.obtener_numero_vcpus()
         memoria = self.obtener_memoria()
         filesystem = self.obtener_fs()
-        imagen_id = self.obtener_imagen(tabla_imagenes)
+        imagen_id = self.obtener_imagen(tabla_imagenes),
+        internet = self.conectar_internet()
         return {
             'id_topologia': id_topologia,
             'n_vcpus': n_vcpus,
             'memoria': memoria,
             'filesystem': filesystem,
-            'imagen_id': imagen_id
+            'imagen_id': imagen_id[0], # se coloca [0] por un bug que devuelve imagen_id como tuple
+            'internet': internet
         }
 
     def aumentar_slice(self, workers_info) -> list:
@@ -428,76 +434,3 @@ class Validador():
             # se devuelve la lista de compute-nodes
             # se pasa antes por set() para eliminar duplicados en la lista
             return input_az
-
-    # Verificar si son funciones validar
-
-    def validar_conectividad(self) -> int:
-        print('''
-            1. Conexión a Internet
-            2. Conexión entre topologías'''
-              )
-        opcion1 = self.obtener_int(
-            'Ingrese la opción: ', minValor=1, maxValor=7)
-        if (opcion1):
-            if (opcion1 == 1):
-                x44 = PrettyTable()
-                x44.field_names = ["ID",  "Nombre", "Redes"]
-                x44.add_row(["1", "TopologiíaPrueba",
-                             "192.168.0.0/24, 192.168.2.0/24"])
-                x44.add_row(
-                    ["2", "TopologíaTest", "172.16.0.0/24, 172.16.10.0/24"])
-                x44.add_row(["3", "Topología1", "10.0.0.0/8"])
-                x44.add_row(["4", "Topología Bus", "10.0.0.0/10"])
-                x44.add_row(["5", "Topología anillo", "172.16.0.0/12"])
-                x44.add_row(["6", "Topología 3 nodos", "192.168.0.0/16"])
-                x44.add_row(["7", "Topología 4", "10.0.0.0/24"])
-                x44 = '\n' + str(x44)
-                x44 = x44.replace("\n", "\n                ")
-                print('\nSeleccionar la topología que desea conectar a Internet')
-                print(x44)
-                print('')
-                opcion2 = self.obtener_int(
-                    'Ingrese el ID: ', minValor=1, maxValor=7)
-                if (opcion2 == 1 or opcion2 == 2 or opcion2 == 3 or opcion2 == 4 or opcion2 == 5
-                        or opcion2 == 6 or opcion2 == 7):
-                    return opcion2
-                else:
-                    print('[x] Ingrese una opción válida')
-
-            elif (opcion1 == 2):
-                x55 = PrettyTable()
-                x55.field_names = ["ID",  "Nombre", "Red"]
-                x55.add_row(["1", "TopologiíaPrueba", "192.168.0.0/20"])
-                x55.add_row(["2", "TopologíaTest", "172.16.0.0/24"])
-                x55.add_row(["3", "Topología1", "10.0.0.0/8"])
-                x55.add_row(["4", "Topología Bus", "10.0.0.0/10"])
-                x55.add_row(["5", "Topología anillo", "172.16.0.0/12"])
-                x55.add_row(["6", "Topología 3 nodos", "192.168.0.0/16"])
-                x55.add_row(["7", "Topología 4", "10.0.0.0/24"])
-                x55 = '\n' + str(x55)
-                x55 = x55.replace("\n", "\n                ")
-                print('''\nSeleccionar las topologías que desean conectar
-                        ''')
-                print(x55)
-                print('')
-                opcion12 = self.obtener_int(
-                    'Ingrese el ID: ', minValor=1, maxValor=6)
-                opcion13 = self.obtener_int(
-                    'Ingrese el ID: ', minValor=1, maxValor=6)
-                if (opcion12 == 1 or opcion12 == 2 or opcion12 == 3 or opcion12 == 4 or opcion12 == 5
-                        or opcion12 == 6):
-                    return opcion12
-                else:
-                    print('[x] Ingrese una opción válida')
-
-            else:
-                print('[x] Ingrese una opción válida')
-            pass
-        else:
-            print('[x] Ingrese una opción válida')
-
-    def validar_keypair(self) -> str:
-        print('')
-        ruta = input('Ingrese la ruta del archivo: ')
-        nombre = input('Ingrese el nombre de Key Pair: ')
-        return nombre

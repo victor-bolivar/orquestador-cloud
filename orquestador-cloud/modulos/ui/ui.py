@@ -3,6 +3,7 @@
 from ..logging.Exceptions import InputException
 from ..validador.validador import Validador
 from ..enlace.enlace import Enlace
+from ..logging.Logging import Logging
 
 import sys
 import json
@@ -14,6 +15,7 @@ class UI:
     def __init__(self):
         self.enlace = Enlace()
         self.validador = Validador()
+        self.logging = Logging()
 
     # Opciones del menu principal
 
@@ -39,23 +41,27 @@ class UI:
                 self.enlace.listar_topologias()
 
             elif (opcion == 2):
+                # 1. Se listan las topologias para que el usuario ingrese el ID
                 self.enlace.listar_topologias()
                 print()  # print new line
+                # 2. El usuario ingresa el ID de la topologia
                 topology_id = self.validador.obtener_int(
-                    'Ingrese el ID de la Topología: ', minValor=1, maxValor=3)
+                    'Ingrese el ID de la Topología: ')
+                # 3. Sise ingresa una opcion valida, se obtiene el json
                 if(topology_id):
-                    result = self.enlace.topologia_json(topology_id)
-                    # TODO pasar el result al modulo logging
+                    self.enlace.topologia_json(topology_id)
                 else:
                     print('[x] Ingrese una opción válida')
 
             elif (opcion == 3):
+                # 1. Se listan las topologias para que el usuario ingrese el ID
                 self.enlace.listar_topologias()
                 print()  # print new line
+                # 2. El usuario ingresa el ID de la topologia
                 topology_id = self.validador.obtener_int(
-                    'Ingrese el ID de la Topología: ', minValor=1, maxValor=3)
+                    'Ingrese el ID de la Topología: ')
                 if(topology_id):
-                    [topologia_json_visualizador, result] = self.enlace.topologia_visualizador(
+                    topologia_json_visualizador = self.enlace.topologia_visualizador(
                         topology_id)
 
                     # se guarda en ./modulos/visualizador/data.json
@@ -68,14 +74,12 @@ class UI:
                     # se abre el browser para visualizar la topologia
                     webbrowser.open_new_tab('modulos/visualizador/app.html')
 
-                    # TODO logging con el codigo syslog en 'result'
                 else:
                     print('[x] Ingrese una opción válida')
 
             elif (opcion == 4):
                 print()
-                result = self.enlace.listar_imagenes()
-                # TODO logging
+                self.enlace.listar_imagenes()
 
             elif (opcion == 5):
                 pass
@@ -87,23 +91,34 @@ class UI:
 
     def opcion_2(self):
         try:
+            # 1. se obtiene la informacion de los workers e imagenes que necesita el modulo validador
             workers_info = self.enlace.workers_info()
             imagenes = self.enlace.obtener_imagenes()
+            # 2. se pide la informacion de la topologia a crear al usuario
             nueva_topologia = self.validador.nueva_topologia(
                 workers_info, imagenes)
 
-            # TODO validar recursos en DB y separarlos
+            # 2. se pide al usuario que confirme la informacion ingresada 
             print('A continuacion se muestra la configuracion ingresada: \n')
             topology_json = json.dumps(nueva_topologia, indent=4)
             topology_json = '                '+topology_json
             topology_json = topology_json.replace("\n", "\n                ")
             print(topology_json)
-
             opcion = self.validador.obtener_int(
                 '\n¿Desea proceder con la creacion de la topologia? (1. Si | 2. No): ')
             print()
             if (opcion == 1):
-                self.enlace.crear_topologia(nueva_topologia)
+                # 3. se verifica que existen los recursos suficientes y se separan los recursos en la DB
+                [recursos_suficientes, result] = self.enlace.separar_recursos_topologia(nueva_topologia)
+                self.logging.log(result)
+                
+                if recursos_suficientes:
+                    # 4. ya que ya se separaron los recursos en la db, se procede a crear la topologia
+                    result = self.enlace.crear_topologia(nueva_topologia)
+                    self.logging.log(result)
+                else:
+                    print('[-] No se realizo la creacion de la topologia debido a recursos insuficientes en el slice')
+                    print('\nSe recomienda aumentar la capacidad del slice o dismuir la capacidad de las maquinas a desplegar')
             elif (opcion == 2):
                 print('[-] No se realizo la creacion de la topologia')
             else:
@@ -132,22 +147,24 @@ class UI:
             'Ingrese la opción: ', minValor=1, maxValor=7)
         if(opcion):
             if (opcion == 1):
+                # 1. se listan las topologias
                 self.enlace.listar_topologias()
+                # 2. el usuario ingresa el ID de la topologia a eliminar
                 id_topologia = self.validador.obtener_int('\nIngrese el ID: ')
+                # 3. se elima la topologia
                 result = self.enlace.eliminar_topologia(id_topologia)
-                # TODO logging
+                self.logging.log(result)
 
             elif (opcion == 2):
-                # se lista y obtiene informacion del estado actual del orquestados
+                # 1. se listan las topologias
                 self.enlace.listar_topologias()
+
+                # 2. se obtiene la tabla de imagenes de la db que necesita el modulo validador
                 tabla_imagenes = self.enlace.obtener_imagenes()
-
-                # se obtiene la data del usuario para la creacion de la VM
+                # 3. se obtiene la data del usuario para la creacion de la VM
                 data = self.validador.agregar_nodo(tabla_imagenes)
-
-                # TODO validar que existen recursos suficientes en la DB y separarlos
-
-                # se pide al usuario confirmar la informacion ingresada
+                
+                # 4. se pide al usuario confirmar la informacion ingresada
                 print('A continuacion se muestra la configuracion ingresada: \n')
                 data_json = json.dumps(data, indent=4)
                 data_json = '                '+data_json
@@ -157,46 +174,76 @@ class UI:
                     '\n¿Desea proceder con la creacion del nodo? (1. Si | 2. No): ')
                 print()
                 if (opcion == 1):
-                    result = self.enlace.agregar_nodo(data)
-                    # TODO logging
+
+                    # 3. se verifica que existen los recursos suficientes y se separan los recursos en la DB
+                    [recursos_suficientes, result] = self.enlace.separar_recursos_nodo(data)
+                    self.logging.log(result)
+                    
+                    if recursos_suficientes:
+                        # 4. ya que ya se separaron los recursos en la db, se procede a crear el nodo
+                        result = self.enlace.agregar_nodo(data)
+                        self.logging.log(result)
+                    else:
+                        print('[-] No se realizo la creacion del nodo debido a recursos insuficientes en el slice')
+                        print('\nSe recomienda aumentar la capacidad del slice o dismuir la capacidad del nodo a desplegar')
+                    
                 elif (opcion == 2):
                     print('[-] No se realizo la creacion del nodo')
                 else:
                     print('[x] Ingrese una opcion valida')
 
             elif (opcion == 3):
+                # 1. se listan las topologias y se pide el ID
                 self.enlace.listar_topologias()
                 id_topologia = self.validador.obtener_int(
                     '\nIngrese el ID de la topologia: ')
+                # 2. se listan los nodos y se pide el ID
                 self.enlace.listar_nodos(id_topologia)
                 id_nodo = self.validador.obtener_int(
                     '\nIngrese el ID del nodo: ')
+                # 3. se elimnina el nodo
                 result = self.enlace.eliminar_nodo(id_topologia, id_nodo)
-                # TODO logging de eliminar
+                self.logging.log(result)
 
             elif (opcion == 4):
+                # 1. se listan las topologias y se pide el ID
                 self.enlace.listar_topologias()
                 id_topologia = self.validador.obtener_int(
                     '\nIngrese el ID de la topologia: ')
                 print()
-                # TODO listar los workers actuales en la topologia
+
+                # 2. TODO listar los workers actuales en la topologia
+                
+                # 3. se obtiene de la db un resumen de las metricas de los workers 
                 workers_info = self.enlace.workers_info()
+                # 4. se pide al usuario que workers desea añadir
                 data = self.validador.aumentar_slice(workers_info)
+                # 5. se añade los workers al slice
                 result = self.enlace.aumentar_slice(data)
-                # TODO logging
+                self.logging.log(result)
 
             elif (opcion == 5):
-
+                # 1. e listan las topologias y se pide el ID
                 self.enlace.listar_topologias()
                 id_topologia = self.validador.obtener_int(
                     '\nIngrese el ID de la topologia: ')
-                result = self.enlace.conectar_slice_internet(id_topologia)
-                # TODO: logging
+                
+                # 2. se listan los nodos y se pide el ID 
+                self.enlace.listar_nodos(id_topologia)
+                id_nodo = self.validador.obtener_int(
+                    '\nIngrese el ID del nodo: ')
+
+                # 3. se da conectividad a internet al nodo especificado
+                result = self.enlace.conectar_nodo_internet(id_nodo)
+                self.logging.log(result)
 
             elif (opcion == 6):
-                data = self.validador.importar_imagen()  # MODULO: VALIDACION
-                result = self.enlace.importar_imagen(data)  # MODULO: ENLACE
-                # TODO pasar el result al modulo logging para general el log
+                # 1. se obtien la informacion de la imagen a importar
+                data = self.validador.importar_imagen()  
+                # 2. se importa la imagen
+                result = self.enlace.importar_imagen(data)
+                # 3. se loggea el resultado
+                self.logging.log(result)
             elif (opcion == 7):
                 pass
         else:

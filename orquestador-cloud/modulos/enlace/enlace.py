@@ -114,7 +114,7 @@ class Enlace():
 
     # Funciones pendientes
 
-    def listar_topologias(self):
+    def listar_topologias(self) -> None:
         x = PrettyTable()
         x.field_names = ["ID", "Nombre", "Tipo", "Infraestructura"]
         x.add_row([1, "Mi 1ra Topología", "Malla", "Linux Cluster"])
@@ -125,7 +125,8 @@ class Enlace():
         x = x.replace("\n", "\n                ")
         print(x)
 
-    def topologia_json(self, topology_id):
+    def topologia_json(self, topology_id) -> None:
+        # verificar que sea un ID valido
         if(topology_id == 1):
             print('''
                                 {
@@ -287,8 +288,8 @@ class Enlace():
                                 }
                             ''')
 
-    def topologia_visualizador(self, topology_id):
-        # TODO con el topology_id obtener de la DB la
+    def topologia_visualizador(self, topology_id) -> None:
+        # TODO con el topology_id obtener de la DB la informacion
         # TODO se formatea a JSON para el modulo visualizacion (usar el json de la opcion1.3)
         # opciones "icon": unknown, switch, router, server, phone, host, cloud, firewall
         topologia_json_visualizador = {
@@ -338,8 +339,7 @@ class Enlace():
                 }
             ]
         }
-        syslog_code = 6
-        return [topologia_json_visualizador, syslog]
+        return topologia_json_visualizador
 
     def listar_imagenes(self) -> None:
         '''
@@ -404,13 +404,77 @@ class Enlace():
             'linux_cluster': tabla_lc
         }
 
-    def crear_topologia(self, nueva_topologia):
+    def separar_recursos_topologia(self, nueva_topologia) -> list:
+        '''
+            Dada la informacion ingresada por el usuario, se verifica que existan los recursos suficientes 
+            haciendo la consulta a la DB de la infraestructura correspondiente.
+
+            De ser asi, se procederia a separar los recursos y se retorna un 'True'. 
+            Sino, se retorna un 'False' indicando que no existen los recursos suficientes.
+
+            inputs
+            ---
+                nueva_topologia (dict): diccionario que almacena la informacion de la topologia a separar.
+            
+            outputs
+            ---
+                recursos_suficientes (bool): booleano que indica si existen los recursos sufientes.
+                result (dict): resultado de la operacion con el fin de loggear las operaciones realizadas
+            
+        '''
+        recursos_suficientes = True
+        print('[+] Recursos separados correctamente en la base de datos')
+        result = {
+            'valor': 6,
+            'mensaje': 'Recursos separados correctamente en la base de datos'
+        }
+
+        return [recursos_suficientes, result]
+    
+    def separar_recursos_nodo(self, nuevo_nodo) -> list:
+        '''
+            Dada la informacion ingresada por el usuario, se verifica que existan los recursos suficientes 
+            haciendo la consulta a la DB de la infraestructura correspondiente.
+
+            De ser asi, se procederia a separar los recursos y se retorna un 'True'. 
+            Sino, se retorna un 'False' indicando que no existen los recursos suficientes.
+
+            inputs
+            ---
+                nuevo_nodo (dict): diccionario que almacena la informacion del nodo a separar.
+            
+            outputs
+            ---
+                recursos_suficientes (bool): booleano que indica si existen los recursos sufientes.
+                result (dict): resultado de la operacion con el fin de loggear las operaciones realizadas
+            
+        '''
+        recursos_suficientes = True
+        print('[+] Recursos separados correctamente en la base de datos')
+        result = {
+            'valor': 6,
+            'mensaje': 'Recursos separados correctamente en la base de datos'
+        }
+
+        return [recursos_suficientes, result]
+        
+
+    def crear_topologia(self, nueva_topologia) -> dict:
         print('[+] Se creó correctamente')
+        result = {
+            'valor': 6,
+            'mensaje': 'Topologia creada correctamente'
+        }
+        return result
 
-    def eliminar_topologia(self, borrado):
+    def eliminar_topologia(self, id_topologia) -> dict:
         print('\n[-] Se eliminó correctamente')
+        return {
+            'valor': 6,
+            'mensaje': 'Topologia eliminada correctamente'
+        }
 
-    def crear_vm(self, data):
+    def crear_vm(self, data) -> dict:
         print('[+] VM creada correctamente')
         result = None  # codigo sislog
         return result
@@ -423,7 +487,7 @@ class Enlace():
         }
         return result
 
-    def listar_nodos(self, id_topologia):
+    def listar_nodos(self, id_topologia) -> None:
         t = PrettyTable()
         t.field_names = ["ID",  "Nombre"]
         t.add_row(["1", "Nodo 1"])
@@ -434,8 +498,13 @@ class Enlace():
         t = t.replace("\n", "\n                ")
         print(t)
 
-    def eliminar_nodo(self, id_topologia, id_nodo):
+    def eliminar_nodo(self, id_topologia, id_nodo) -> dict:
         print('\n[-] Se eliminó correctamente')
+        result = {
+            'valor': 6,
+            'mensaje': 'Maquina virtual eliminada satisfactoriamente'
+        }
+        return result
 
     def aumentar_slice(self, data) -> dict:
         print('\n[+] Slice aumentado exitosamente')
@@ -445,11 +514,11 @@ class Enlace():
         }
         return result
 
-    def conectar_slice_internet(self, id_topologia) -> dict:
+    def conectar_nodo_internet(self, id_nodo) -> dict:
         print('\n[+] Conexión exitosa')
         return {
             'valor': 6,
-            'mensaje': 'Conexion de slice a internet satisfactoria'
+            'mensaje': 'Conexion de nodo a internet satisfactoria'
         }
 
     def conectar_topologias(self, id_topologia1, id_topologia2) -> dict:
