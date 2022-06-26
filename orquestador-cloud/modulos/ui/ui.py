@@ -218,10 +218,11 @@ class UI:
                     # 2. se listan los workers actuales en la topologia
                     self.enlace.listar_workers_actuales(id_topologia)
                     
-                    # 3. se obtiene de la db un resumen de las metricas de los workers 
+                    # 3. se obtiene de la db un resumen de las metricas de los workers y los IDs de workers para esa infraestructura
                     workers_info = self.enlace.workers_info_slice(id_topologia)
+                    workers_ids = ['1001', '1002', '1003'] # TODO
                     # 4. se pide al usuario que workers desea añadir
-                    data = self.validador.aumentar_slice(workers_info)
+                    data = self.validador.aumentar_slice(workers_info, workers_ids)
                     # 5. se añade los workers al slice
                     result = self.enlace.aumentar_slice(data)
                     self.logging.log(result)

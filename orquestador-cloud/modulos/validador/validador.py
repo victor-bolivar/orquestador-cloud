@@ -412,18 +412,18 @@ class Validador():
         n_vcpus = self.obtener_numero_vcpus()
         memoria = self.obtener_memoria()
         filesystem = self.obtener_fs()
-        imagen_id = self.obtener_imagen(tabla_imagenes),
+        imagen_id = self.obtener_imagen(tabla_imagenes)
         internet = self.conectar_internet()
         return {
             'id_topologia': id_topologia,
             'n_vcpus': n_vcpus,
             'memoria': memoria,
             'filesystem': filesystem,
-            'imagen_id': imagen_id[0], # se coloca [0] por un bug que devuelve imagen_id como tuple
+            'imagen_id': imagen_id,
             'internet': internet
         }
 
-    def aumentar_slice(self, workers_info:str) -> list:
+    def aumentar_slice(self, workers_info:str, workers_ids:list) -> list:
         '''
             input 
             ---
@@ -438,9 +438,8 @@ class Validador():
         print('\nElija el(los) worker(s) con los cuales desea aumentar su zona de disponibilidad ')
         input_az = input(
             'Ingrese los IDs sin espacio y separado por comas (ex: 1001,1002,1003): ')
-        workers_validos = ['1001', '1002', '1003']
         input_az = input_az.split(',')
-        if(set(input_az).issubset(workers_validos)):
+        if(set(input_az).issubset(workers_ids)):
             # se devuelve la lista de compute-nodes
             # se pasa antes por set() para eliminar duplicados en la lista
             return input_az
@@ -484,7 +483,7 @@ class ValidadorTest():
 
     # Opcion 2: Crear Topologia
 
-    def nueva_topologia(self, workers_info: dict, tabla_imagenes: str, valuesTest) -> dict:
+    def nueva_topologia(self, workers_info: dict, tabla_imagenes: str, valuesTest:dict) -> dict:
         '''
         input
         ---
@@ -570,22 +569,30 @@ class ValidadorTest():
                 }
 
         '''
-        nombre = input('\nIngrese el nombre de la topologia: ')
-        tipo = self.obtener_tipo_topologia()
-        infraestructura = self.obtener_infraestructura(workers_info)
+        #nombre = input('\nIngrese el nombre de la topologia: ')
+        nombre = valuesTest['nombre']
+        #tipo = self.obtener_tipo_topologia()
+        tipo = valuesTest['tipo']
+        #infraestructura = self.obtener_infraestructura(workers_info)
+        infraestructura = valuesTest['infraestructura']
         # datos de las 3 VMs a crear (numero predefinido para las topologias predefinidas)
-        print()
-        print('A continuacion se le pedira la informacion de las 3 VMs a crear para la topologia predefinida')
-        print('Por favor, tenga en cuenta la tabla de recursos disponibles para su AZ mostrada previamente\n')
+        #print()
+        #print('A continuacion se le pedira la informacion de las 3 VMs a crear para la topologia predefinida')
+        #print('Por favor, tenga en cuenta la tabla de recursos disponibles para su AZ mostrada previamente\n')
         vms = []
         for i in range(1, 4):
-            print('            ------ Maquina virtual #'+str(i)+' ------\n')
-            n_vcpus = self.obtener_numero_vcpus()
-            memoria = self.obtener_memoria()
-            filesystem = self.obtener_fs()
-            imagen_id = self.obtener_imagen(tabla_imagenes)
-            internet = self.conectar_internet()
-            print()
+            #print('            ------ Maquina virtual #'+str(i)+' ------\n')
+            #n_vcpus = self.obtener_numero_vcpus()
+            n_vcpus = valuesTest['vms'][i-1]['n_vcpus']
+            #memoria = self.obtener_memoria()
+            memoria = valuesTest['vms'][i-1]['memoria']
+            #filesystem = self.obtener_fs()
+            filesystem = valuesTest['vms'][i-1]['filesystem']
+            #imagen_id = self.obtener_imagen(tabla_imagenes)
+            imagen_id = valuesTest['vms'][i-1]['imagen_id']
+            #internet = self.conectar_internet()
+            internet = valuesTest['vms'][i-1]['internet']
+            #print()
             vms.append({
                 'n_vcpus': n_vcpus,
                 'memoria': memoria,
@@ -601,7 +608,7 @@ class ValidadorTest():
             'vms': vms
         }
 
-    def obtener_tipo_topologia(self, valueTest) -> str:
+    def obtener_tipo_topologia(self, valueTest:int) -> str:
         topologias_validas = ['(1)lineal', '(2)malla',
                               '(3)arbol', '(4)anillo', '(5)bus']
         #variable = self.obtener_int('Ingrese el tipo de topologia '+str(topologias_validas)+': ', minValor=1, maxValor=5)
@@ -620,7 +627,7 @@ class ValidadorTest():
         else:
             raise InputException()
 
-    def obtener_infraestructura(self, workers_info, testInfraestructura, testAz) -> dict:
+    def obtener_infraestructura(self, workers_info, testInfraestructura:int, testAz:str) -> dict:
         '''
             inputs
             ---
@@ -696,9 +703,9 @@ class ValidadorTest():
         else:
             raise InputException()
 
-    def conectar_internet(self) -> int:
-        opcion = self.obtener_int(
-            '¿Desea que el nodo tenga conexión a Internet? (1. Si | 2. No): ', minValor=1, maxValor=2)
+    def conectar_internet(self, inputTest:int) -> int:
+        #opcion = self.obtener_int('¿Desea que el nodo tenga conexión a Internet? (1. Si | 2. No): ', minValor=1, maxValor=2)
+        opcion = inputTest
         if (opcion == 1):
             return True
         elif (opcion == 2):
@@ -706,7 +713,7 @@ class ValidadorTest():
         else:
             raise InputException()
 
-    def obtener_numero_vcpus(self) -> int:
+    def obtener_numero_vcpus(self, inputTest:int) -> int:
         valores_validos = [1, 2, 4, 8]
 
         # se imprime la tabla
@@ -718,17 +725,17 @@ class ValidadorTest():
         # para añadir identacion a la tabla
         t = '                '+t
         t = t.replace("\n", "\n                ")
-        print(t)
-        print()
-        n_vcpus = self.obtener_int(
-            'Elija el número de vCPUs: ', valoresValidos=valores_validos)
-        print()
+        #print(t)
+        #print()
+        #n_vcpus = self.obtener_int('Elija el número de vCPUs: ', valoresValidos=valores_validos)
+        n_vcpus = inputTest
+        #print()
         if n_vcpus:
             return n_vcpus
         else:
             raise InputException()
 
-    def obtener_memoria(self) -> int:
+    def obtener_memoria(self, inputTest:int) -> int:
         valores_validos = [1, 2, 4, 8]
 
         # se imprime la tabla
@@ -740,17 +747,17 @@ class ValidadorTest():
         # para añadir identacion a la tabla
         t = '                '+t
         t = t.replace("\n", "\n                ")
-        print(t)
-        print()
-        input_memoria = self.obtener_int(
-            'Elija el tamaño de la memoria: ', valoresValidos=valores_validos)
-        print()
+        #print(t)
+        #print()
+        #input_memoria = self.obtener_int('Elija el tamaño de la memoria: ', valoresValidos=valores_validos)
+        input_memoria = inputTest
+        #print()
         if input_memoria:
             return input_memoria
         else:
             raise InputException()
 
-    def obtener_fs(self) -> int:
+    def obtener_fs(self, fsTest:int, sizeTest:int=None) -> int:
         '''
             output
             ---
@@ -767,21 +774,24 @@ class ValidadorTest():
                 }
 
         '''
-        print('A continuación definirá la cantidad de almacenamiento y tipo de almacenamiento en base a sus requerimientos')
-        print('     1. CopyOnWrite FileSystem: si no piensa instalar muchos paquetes adicionales (como un switch o router)')
-        print('     2. Raw FileSystem: Si piensa descargar muchos archivos o paquetes (como una base de datos)')
-        opcion = self.obtener_int(
-            'Seleccionar la opción adecuada para su escenario: ', minValor=1, maxValor=2)
-        print()
+        #print('A continuación definirá la cantidad de almacenamiento y tipo de almacenamiento en base a sus requerimientos')
+        #print('     1. CopyOnWrite FileSystem: si no piensa instalar muchos paquetes adicionales (como un switch o router)')
+        #print('     2. Raw FileSystem: Si piensa descargar muchos archivos o paquetes (como una base de datos)')
+        
+        #opcion = self.obtener_int('Seleccionar la opción adecuada para su escenario: ', minValor=1, maxValor=2)
+        opcion = fsTest
+        
+        #print()
         if (opcion):
             if(opcion == 1):
                 return {
                     'filesystem': 'CopyOnWrite'
                 }
             elif(opcion == 2):
-                tamaño = self.obtener_int(
-                    'Ingresar la cantidad de almacenamiento (Mínimo:10 GB | Máximo: 80 GB): ', minValor=10, maxValor=80)
-                print()
+                #tamaño = self.obtener_int('Ingresar la cantidad de almacenamiento (Mínimo:10 GB | Máximo: 80 GB): ', minValor=10, maxValor=80)
+                tamaño = sizeTest
+
+                #print()
                 if (tamaño):
                     return {
                         'filesystem': 'Raw',
@@ -792,14 +802,15 @@ class ValidadorTest():
         else:
             raise InputException()
 
-    def obtener_imagen(self, tabla_imagenes) -> int:
+    def obtener_imagen(self, tabla_imagenes, inputTest:int) -> int:
         '''
             tabla_imagenes: tabla que contiene las imagenes disponibles en el sistema
         '''
-        print(tabla_imagenes)
-        print()
-        imagen_id = self.obtener_int('Ingrese el ID: ')
-        print()
+        #print(tabla_imagenes)
+        #print()
+        #imagen_id = self.obtener_int('Ingrese el ID: ')
+        imagen_id = inputTest
+        #print()
         if(imagen_id):
             return imagen_id
         else:
@@ -807,7 +818,7 @@ class ValidadorTest():
 
     # Opcion 3: Editar
 
-    def importar_imagen(self) -> dict:
+    def importar_imagen(self, valuesTest:dict) -> dict:
         '''
             Dependiendo de la opcion se retorna:
 
@@ -825,25 +836,34 @@ class ValidadorTest():
                     'categoria':categoria,
                     'url':url  }
         '''
-        print('''
-            1. Seleccionar un archivo local
-            2. Ingresar un URL para ser descargado por el controlador
-        ''')
-        opcion = self.obtener_int('Ingrese la opcion: ', valoresValidos=[1, 2])
-        nombre = input('\nIngrese un nombre para la imagen: ')
+        # print('''
+        #     1. Seleccionar un archivo local
+        #     2. Ingresar un URL para ser descargado por el controlador
+        # ''')
+        
+        #opcion = self.obtener_int('Ingrese la opcion: ', valoresValidos=[1, 2])
+        opcion = valuesTest['opcion']
+
+        #nombre = input('\nIngrese un nombre para la imagen: ')
+        nombre = valuesTest['nombre']
+
         categorias_validas = ['server', 'security', 'networking']
-        categoria = input('Ingrese el nombre de la categoria ' +
-                          str(categorias_validas)+': ')
+        #categoria = input('Ingrese el nombre de la categoria ' +str(categorias_validas)+': ')
+        categoria = valuesTest['categoria']
 
         if (categoria in categorias_validas):
             if (opcion == 1):
-                ruta = input('Ingrese la ruta del archivo: ')
+                #ruta = input('Ingrese la ruta del archivo: ')
+                ruta = valuesTest['ruta']
+
                 return {'opcion': opcion,
                         'nombre': nombre,
                         'categoria': categoria,
                         'ruta': ruta}
             elif (opcion == 2):
-                url = input('Ingrese la url de la imagen: ')
+                #url = input('Ingrese la url de la imagen: ')
+                url = valuesTest['url']
+
                 return {'opcion': opcion,
                         'nombre': nombre,
                         'categoria': categoria,
@@ -853,24 +873,30 @@ class ValidadorTest():
         else:
             raise InputException()
 
-    def agregar_nodo(self, tabla_imagenes:str) -> dict:
-        id_topologia = self.obtener_int('\nIngrese el ID: ')
-        print()
-        n_vcpus = self.obtener_numero_vcpus()
-        memoria = self.obtener_memoria()
-        filesystem = self.obtener_fs()
-        imagen_id = self.obtener_imagen(tabla_imagenes),
-        internet = self.conectar_internet()
+    def agregar_nodo(self, tabla_imagenes:str, valuesTest:dict) -> dict:
+        #id_topologia = self.obtener_int('\nIngrese el ID: ')
+        id_topologia = valuesTest['id_topologia']
+        #print()
+        #n_vcpus = self.obtener_numero_vcpus()
+        n_vcpus = valuesTest['n_vcpus']
+        #memoria = self.obtener_memoria()
+        memoria = valuesTest['memoria']
+        #filesystem = self.obtener_fs()
+        filesystem = valuesTest['filesystem']
+        #imagen_id = self.obtener_imagen(tabla_imagenes)
+        imagen_id = valuesTest['imagen_id']
+        #internet = self.conectar_internet()
+        internet = valuesTest['internet']
         return {
             'id_topologia': id_topologia,
             'n_vcpus': n_vcpus,
             'memoria': memoria,
             'filesystem': filesystem,
-            'imagen_id': imagen_id[0], # se coloca [0] por un bug que devuelve imagen_id como tuple
+            'imagen_id': imagen_id,
             'internet': internet
         }
 
-    def aumentar_slice(self, workers_info:str) -> list:
+    def aumentar_slice(self, workers_info:str, workers_ids:list, inputTest) -> list:
         '''
             input 
             ---
@@ -881,13 +907,13 @@ class ValidadorTest():
             ---
             input_az: lista con los IDs de los workers que se van a añadir al slice
         '''
-        print(workers_info)
-        print('\nElija el(los) worker(s) con los cuales desea aumentar su zona de disponibilidad ')
-        input_az = input(
-            'Ingrese los IDs sin espacio y separado por comas (ex: 1001,1002,1003): ')
-        workers_validos = ['1001', '1002', '1003']
+        #print(workers_info)
+        #print('\nElija el(los) worker(s) con los cuales desea aumentar su zona de disponibilidad ')
+        #input_az = input('Ingrese los IDs sin espacio y separado por comas (ex: 1001,1002,1003): ')
+        input_az = inputTest
+
         input_az = input_az.split(',')
-        if(set(input_az).issubset(workers_validos)):
+        if(set(input_az).issubset(workers_ids)):
             # se devuelve la lista de compute-nodes
             # se pasa antes por set() para eliminar duplicados en la lista
             return input_az
