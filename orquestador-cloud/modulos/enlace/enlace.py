@@ -457,7 +457,18 @@ class Enlace():
         }
 
         return [recursos_suficientes, result]
-        
+
+    def listar_workers_actuales(self, id_topologia) -> None:
+        print('Actualmente su topologia cuenta con: '+str(['worker1', 'worker2']))
+        print()
+
+    def workers_info_slice(self, id_topologia) -> str:
+        '''
+            A apartir del ID de una topologia, se define que tipo de infraestructura usa y se 
+            devuelve la tabla para esa infraestructura.
+        '''
+        return self.workers_info()['openstack']
+
 
     def crear_topologia(self, nueva_topologia) -> dict:
         print('[+] Se creó correctamente')

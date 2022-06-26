@@ -8,8 +8,6 @@ from ..logging.Logging import Logging
 import sys
 import json
 import webbrowser
-from prettytable import PrettyTable
-
 
 class UI:
     def __init__(self):
@@ -51,7 +49,7 @@ class UI:
                 if(topology_id):
                     self.enlace.topologia_json(topology_id)
                 else:
-                    print('[x] Ingrese una opción válida')
+                    raise InputException()
 
             elif (opcion == 3):
                 # 1. Se listan las topologias para que el usuario ingrese el ID
@@ -75,7 +73,7 @@ class UI:
                     webbrowser.open_new_tab('modulos/visualizador/app.html')
 
                 else:
-                    print('[x] Ingrese una opción válida')
+                    raise InputException()
 
             elif (opcion == 4):
                 print()
@@ -85,47 +83,43 @@ class UI:
                 pass
         else:
             # Si no se especifico una opcion valida, se procede con el bucle
-            print('[x] Ingrese una opción válida')
+            raise InputException()
 
     # Opcion 2
 
     def opcion_2(self):
-        try:
-            # 1. se obtiene la informacion de los workers e imagenes que necesita el modulo validador
-            workers_info = self.enlace.workers_info()
-            imagenes = self.enlace.obtener_imagenes()
-            # 2. se pide la informacion de la topologia a crear al usuario
-            nueva_topologia = self.validador.nueva_topologia(
-                workers_info, imagenes)
+        # 1. se obtiene la informacion de los workers e imagenes que necesita el modulo validador
+        workers_info = self.enlace.workers_info()
+        imagenes = self.enlace.obtener_imagenes()
+        # 2. se pide la informacion de la topologia a crear al usuario
+        nueva_topologia = self.validador.nueva_topologia(
+            workers_info, imagenes)
 
-            # 2. se pide al usuario que confirme la informacion ingresada 
-            print('A continuacion se muestra la configuracion ingresada: \n')
-            topology_json = json.dumps(nueva_topologia, indent=4)
-            topology_json = '                '+topology_json
-            topology_json = topology_json.replace("\n", "\n                ")
-            print(topology_json)
-            opcion = self.validador.obtener_int(
-                '\n¿Desea proceder con la creacion de la topologia? (1. Si | 2. No): ')
-            print()
-            if (opcion == 1):
-                # 3. se verifica que existen los recursos suficientes y se separan los recursos en la DB
-                [recursos_suficientes, result] = self.enlace.separar_recursos_topologia(nueva_topologia)
-                self.logging.log(result)
+        # 2. se pide al usuario que confirme la informacion ingresada 
+        print('A continuacion se muestra la configuracion ingresada: \n')
+        topology_json = json.dumps(nueva_topologia, indent=4)
+        topology_json = '                '+topology_json
+        topology_json = topology_json.replace("\n", "\n                ")
+        print(topology_json)
+        opcion = self.validador.obtener_int(
+            '\n¿Desea proceder con la creacion de la topologia? (1. Si | 2. No): ')
+        print()
+        if (opcion == 1):
+            # 3. se verifica que existen los recursos suficientes y se separan los recursos en la DB
+            [recursos_suficientes, result] = self.enlace.separar_recursos_topologia(nueva_topologia)
+            self.logging.log(result)
                 
-                if recursos_suficientes:
-                    # 4. ya que ya se separaron los recursos en la db, se procede a crear la topologia
-                    result = self.enlace.crear_topologia(nueva_topologia)
-                    self.logging.log(result)
-                else:
-                    print('[-] No se realizo la creacion de la topologia debido a recursos insuficientes en el slice')
-                    print('\nSe recomienda aumentar la capacidad del slice o dismuir la capacidad de las maquinas a desplegar')
-            elif (opcion == 2):
-                print('[-] No se realizo la creacion de la topologia')
+            if recursos_suficientes:
+                # 4. ya que ya se separaron los recursos en la db, se procede a crear la topologia
+                result = self.enlace.crear_topologia(nueva_topologia)
+                self.logging.log(result)
             else:
-                print('[x] Ingrese una opcion valida')
-        except InputException as inputException:
-            print(inputException)
-            return
+                print('[-] No se realizo la creacion de la topologia debido a recursos insuficientes en el slice')
+                print('\nSe recomienda aumentar la capacidad del slice o dismuir la capacidad de las maquinas a desplegar')
+        elif (opcion == 2):
+            print('[-] No se realizo la creacion de la topologia')
+        else:
+            raise InputException()
 
     # Opcion 3
 
@@ -140,7 +134,7 @@ class UI:
                 3.3 Eliminar nodo en topología
                 3.4 Aumentar capacidad de slice 
                 3.5 Conexion a internet
-                3.6 Añadir imagen 
+                3.6 Importar imagen 
                 3.7 Regresar
             ''')
         opcion = self.validador.obtener_int(
@@ -151,9 +145,12 @@ class UI:
                 self.enlace.listar_topologias()
                 # 2. el usuario ingresa el ID de la topologia a eliminar
                 id_topologia = self.validador.obtener_int('\nIngrese el ID: ')
-                # 3. se elima la topologia
-                result = self.enlace.eliminar_topologia(id_topologia)
-                self.logging.log(result)
+                if(id_topologia):
+                    # 3. se elima la topologia
+                    result = self.enlace.eliminar_topologia(id_topologia)
+                    self.logging.log(result)
+                else:
+                    raise InputException()
 
             elif (opcion == 2):
                 # 1. se listan las topologias
@@ -190,52 +187,66 @@ class UI:
                 elif (opcion == 2):
                     print('[-] No se realizo la creacion del nodo')
                 else:
-                    print('[x] Ingrese una opcion valida')
+                    raise InputException()
 
             elif (opcion == 3):
                 # 1. se listan las topologias y se pide el ID
                 self.enlace.listar_topologias()
                 id_topologia = self.validador.obtener_int(
                     '\nIngrese el ID de la topologia: ')
-                # 2. se listan los nodos y se pide el ID
-                self.enlace.listar_nodos(id_topologia)
-                id_nodo = self.validador.obtener_int(
-                    '\nIngrese el ID del nodo: ')
-                # 3. se elimnina el nodo
-                result = self.enlace.eliminar_nodo(id_topologia, id_nodo)
-                self.logging.log(result)
+                if(id_topologia):
+                    # 2. se listan los nodos y se pide el ID
+                    self.enlace.listar_nodos(id_topologia)
+                    id_nodo = self.validador.obtener_int(
+                        '\nIngrese el ID del nodo: ')
+                    if(id_nodo):
+                        # 3. se elimnina el nodo
+                        result = self.enlace.eliminar_nodo(id_topologia, id_nodo)
+                        self.logging.log(result)
+                    else:
+                        raise InputException()
+                else:
+                    raise InputException()
 
             elif (opcion == 4):
                 # 1. se listan las topologias y se pide el ID
                 self.enlace.listar_topologias()
                 id_topologia = self.validador.obtener_int(
                     '\nIngrese el ID de la topologia: ')
-                print()
-
-                # 2. TODO listar los workers actuales en la topologia
-                
-                # 3. se obtiene de la db un resumen de las metricas de los workers 
-                workers_info = self.enlace.workers_info()
-                # 4. se pide al usuario que workers desea añadir
-                data = self.validador.aumentar_slice(workers_info)
-                # 5. se añade los workers al slice
-                result = self.enlace.aumentar_slice(data)
-                self.logging.log(result)
+                if(id_topologia):
+                    print()
+                    # 2. se listan los workers actuales en la topologia
+                    self.enlace.listar_workers_actuales(id_topologia)
+                    
+                    # 3. se obtiene de la db un resumen de las metricas de los workers 
+                    workers_info = self.enlace.workers_info_slice(id_topologia)
+                    # 4. se pide al usuario que workers desea añadir
+                    data = self.validador.aumentar_slice(workers_info)
+                    # 5. se añade los workers al slice
+                    result = self.enlace.aumentar_slice(data)
+                    self.logging.log(result)
+                else:
+                    raise InputException()
 
             elif (opcion == 5):
-                # 1. e listan las topologias y se pide el ID
+                # 1. se listan las topologias y se pide el ID
                 self.enlace.listar_topologias()
                 id_topologia = self.validador.obtener_int(
                     '\nIngrese el ID de la topologia: ')
-                
-                # 2. se listan los nodos y se pide el ID 
-                self.enlace.listar_nodos(id_topologia)
-                id_nodo = self.validador.obtener_int(
-                    '\nIngrese el ID del nodo: ')
+                if(id_topologia):
+                    # 2. se listan los nodos y se pide el ID 
+                    self.enlace.listar_nodos(id_topologia)
+                    id_nodo = self.validador.obtener_int(
+                        '\nIngrese el ID del nodo: ')
 
-                # 3. se da conectividad a internet al nodo especificado
-                result = self.enlace.conectar_nodo_internet(id_nodo)
-                self.logging.log(result)
+                    if(id_nodo):
+                        # 3. se da conectividad a internet al nodo especificado
+                        result = self.enlace.conectar_nodo_internet(id_nodo)
+                        self.logging.log(result)
+                    else:
+                        raise InputException()
+                else:
+                    raise InputException()
 
             elif (opcion == 6):
                 # 1. se obtien la informacion de la imagen a importar
@@ -248,7 +259,7 @@ class UI:
                 pass
         else:
             # Si no se especifico una opcion valida, se procede con el bucle
-            print('[x] Ingrese una opcion valida')
+            raise InputException()
 
     # Metodo principal
 
@@ -265,15 +276,19 @@ class UI:
             opcion = self.validador.obtener_int(
                 'Ingrese la opción: ', minValor=1, maxValor=4)
             if(opcion):
-                if (opcion == 1):
-                    self.opcion_1()
-                elif (opcion == 2):
-                    self.opcion_2()
-                elif (opcion == 3):
-                    self.opcion_3()
-                elif (opcion == 4):
-                    sys.exit(0)
+                try: 
+                    if (opcion == 1):
+                        self.opcion_1()
+                    elif (opcion == 2):
+                        self.opcion_2()
+                    elif (opcion == 3):
+                        self.opcion_3()
+                    elif (opcion == 4):
+                        sys.exit(0)
+                except InputException as inputException:
+                    print()
+                    print(inputException)
             else:
-                print('[x] Ingrese una opcion valida')
+                print('\n[x] Ingrese una opcion valida')
                 # Si no se especifico una opcion valida, se procede con el bucle
                 continue
