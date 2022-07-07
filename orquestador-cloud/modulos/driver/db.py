@@ -75,3 +75,7 @@ class DB:
         # TODO parse data
         print(data)
         return data
+    
+    def obtener_workers(self):
+        data = self.get('select * from Worker')
+        return data

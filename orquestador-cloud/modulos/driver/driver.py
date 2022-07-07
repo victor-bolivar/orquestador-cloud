@@ -3,8 +3,9 @@
 from cgitb import reset
 from datetime import datetime, timedelta
 from syslog import syslog
+from numpy import rec
 from prettytable import PrettyTable
-#import pandas as pd
+import pandas as pd
 import csv
 
 from .ssh import SSH
@@ -12,9 +13,13 @@ from .db import DB
 from ..config.crendentials import config_controller_lc
 from ..config.crendentials import config_db_linuxcluster
 from ..config.crendentials import config_openstack
+from ..config.crendentials import config_w1_lc
+from ..config.crendentials import config_w2_lc
+from ..config.crendentials import config_w3_lc
+from ..logging.Exceptions import InputException
 
-#import openstack
-#openstack.enable_logging(debug=True, path='./modulos/logging/orquestador.log')
+import openstack
+openstack.enable_logging(debug=True, path='./modulos/logging/orquestador.log')
 
 
 class Driver():
@@ -29,22 +34,30 @@ class Driver():
                                      config_controller_lc['username'],
                                      config_controller_lc['private_key'],
                                      config_controller_lc['passphrase'])
-        self.linuxc_worker1 = SSH('10.20.12.107',
-                                  2201,  # TODO
-                                  'victor',
-                                  config_controller_lc['private_key'],
-                                  config_controller_lc['passphrase'])
-        self.linuxc_worker2 = None
-        self.linuxc_worker3 = None
+        self.linuxc_worker1 = SSH(config_w1_lc['host'],
+                                     config_w1_lc['port'],
+                                     config_w1_lc['username'],
+                                     config_w1_lc['private_key'],
+                                     config_w1_lc['passphrase'])
+        self.linuxc_worker2 = SSH(config_w2_lc['host'],
+                                     config_w2_lc['port'],
+                                     config_w2_lc['username'],
+                                     config_w2_lc['private_key'],
+                                     config_w2_lc['passphrase'])
+        self.linuxc_worker3 = SSH(config_w3_lc['host'],
+                                     config_w3_lc['port'],
+                                     config_w3_lc['username'],
+                                     config_w3_lc['private_key'],
+                                     config_w3_lc['passphrase'])
         self.linuxc_ofs = None
         # Arquitectura#2 : OpenStack
-        """ self.openstacksdk = openstack.connect(
+        self.openstacksdk = openstack.connect(
                                 auth_url=config_openstack['auth_url'],
                                 project_name=config_openstack['project_name'],
                                 username=config_openstack['username'],
                                 password=config_openstack['password'],
                                 user_domain_name=config_openstack['user_domain_name'],
-                                project_domain_name=config_openstack['project_domain_name']) """
+                                project_domain_name=config_openstack['project_domain_name'])
 
     # Linux Cluster: Scheduler
 
@@ -75,20 +88,100 @@ class Driver():
 
     def scheduler_cluster_linux(self):
         # TODO
+        # filtro: por recursos disponibles y por az del usuario
         # obtener metricas de worker1
         # exponential weigted average
         # calcular coeficiente de carga
 
         # Worker 1
-        list_cpu_usage = self.linuxc_worker1.list_cpu_usage(
-            '/home/victor/worker1_cpu_metrics')
-        worker1_cpu_avg = self.cpu_exponential_weigted_average(
-            list_cpu_usage)  # exponential weigted average
+        list_cpu_usage = self.linuxc_worker1.list_cpu_usage('/home/w1/worker1_cpu_metrics')
+        worker1_cpu_avg = self.cpu_exponential_weigted_average(list_cpu_usage)  # exponential weigted average
+        print(worker1_cpu_avg)
+
+        # Worker 2
+        list_cpu_usage = self.linuxc_worker2.list_cpu_usage('/home/w2/worker2_cpu_metrics')
+        worker2_cpu_avg = self.cpu_exponential_weigted_average(list_cpu_usage)  # exponential weigted average
+        print(worker2_cpu_avg)
+
+        # Worker 3
+        list_cpu_usage = self.linuxc_worker3.list_cpu_usage('/home/wk3/worker3_cpu_metrics')
+        worker3_cpu_avg = self.cpu_exponential_weigted_average(list_cpu_usage)  # exponential weigted average
+        print(worker3_cpu_avg)
 
         # lo mismo para los otros workers
         # se compara con el resto de workers
         worker_asignado = None
         return worker_asignado
+
+    def crear_topologia(self, nueva_topologia) -> dict:
+        if (nueva_topologia['infraestructura']['infraestructura'] == "Linux Cluster"):
+            # se obtiene los ID de los workers dentro de la AZ
+            az = nueva_topologia['infraestructura']['az']
+            # 
+
+            workers_db = self.linuxc_db.obtener_workers()
+            
+
+        elif (nueva_topologia['infraestructura']['infraestructura'] == "OpenStack"):
+            # TODO
+            pass
+
+
+
+        print('[+] Se creó correctamente')
+        result = {
+            'valor': 6,
+            'mensaje': 'Topologia creada correctamente'
+        }
+        return result
+
+    def recursos_suficientes_topologia(self, nueva_topologia) -> bool:
+        '''
+            Dada la informacion ingresada por el usuario, se verifica que existan los recursos suficientes 
+            haciendo la consulta a la DB de la infraestructura correspondiente.
+
+            De ser asi, se se retorna un 'True'. 
+            Sino, se retorna un 'False' indicando que no existen los recursos suficientes.
+
+            inputs
+            ---
+                nueva_topologia (dict): diccionario que almacena la informacion de la topologia a separar.
+            
+            outputs
+            ---
+                recursos_suficientes (bool): booleano que indica si existen los recursos sufientes.
+            
+        '''
+
+        if (nueva_topologia['infraestructura']['infraestructura'] == "Linux Cluster"):
+            recursos_suficientes = None
+            # se obtiene los ID de los workers dentro de la AZ
+            az = nueva_topologia['infraestructura']['az']
+            workers_db = self.linuxc_db.obtener_workers()
+            # se obtiene una lista con la informacion de los workers dentro del AZ
+            workers_validos = [] 
+            for worker in workers_db:
+                if (str(worker['idWorker']) in az):
+                    workers_validos.append(worker)
+            # se itera sobre cada vm para verificar si hay recursos suficientes
+            for vm in nueva_topologia['vms']:
+                if (recursos_suficientes != False):
+                    # si recursos_suficientes = False, significa que para una VM no hay recursos suficientes, por lo que la topologia dejaria de ser valida
+                    for worker in workers_validos:
+                        if ( (int(worker['vcpuLibres'])>=vm['n_vcpus']) and (int(worker['memoriaLibre'])>=vm['memoria']) and (int(worker['discoLibre'])>=vm['filesystem']['size'])):
+                            # si hay recursos suficientes, se van restando para no considerarlos al evaluar las demas VMs
+                            worker['vcpuLibres'] = int(worker['vcpuLibres']) - vm['n_vcpus']
+                            worker['memoriaLibre'] = int(worker['memoriaLibre']) - vm['memoria']
+                            worker['discoLibre'] = int(worker['discoLibre']) - vm['filesystem']['size']
+                            recursos_suficientes = True
+                            break
+                        else:
+                            recursos_suficientes = False
+                            if (worker == workers_validos[-1]):
+                                # si es el ultimo worker y no hay recursos suficientes, entonces no hay espacio en todo el slice
+                                break
+            return recursos_suficientes
+        # TODO caso openstack
 
     # Funciones
 
@@ -404,32 +497,7 @@ class Driver():
             'linux_cluster': tabla_lc
         }
 
-    def separar_recursos_topologia(self, nueva_topologia) -> list:
-        '''
-            Dada la informacion ingresada por el usuario, se verifica que existan los recursos suficientes 
-            haciendo la consulta a la DB de la infraestructura correspondiente.
-
-            De ser asi, se procederia a separar los recursos y se retorna un 'True'. 
-            Sino, se retorna un 'False' indicando que no existen los recursos suficientes.
-
-            inputs
-            ---
-                nueva_topologia (dict): diccionario que almacena la informacion de la topologia a separar.
-            
-            outputs
-            ---
-                recursos_suficientes (bool): booleano que indica si existen los recursos sufientes.
-                result (dict): resultado de la operacion con el fin de loggear las operaciones realizadas
-            
-        '''
-        recursos_suficientes = True
-        print('[+] Recursos separados correctamente en la base de datos')
-        result = {
-            'valor': 6,
-            'mensaje': 'Recursos separados correctamente en la base de datos'
-        }
-
-        return [recursos_suficientes, result]
+    
     
     def separar_recursos_nodo(self, nuevo_nodo) -> list:
         '''
@@ -468,14 +536,6 @@ class Driver():
             devuelve la tabla para esa infraestructura.
         '''
         return self.workers_info()['openstack']
-
-    def crear_topologia(self, nueva_topologia) -> dict:
-        print('[+] Se creó correctamente')
-        result = {
-            'valor': 6,
-            'mensaje': 'Topologia creada correctamente'
-        }
-        return result
 
     def eliminar_topologia(self, id_topologia) -> dict:
         print('\n[-] Se eliminó correctamente')

@@ -14,6 +14,52 @@ class Manager:
         self.driver = Driver()
         self.validador = Validador()
         self.logging = Logging()
+        # pruebas
+        data_pruebas =  {
+                    "nombre": "aa",
+                    "tipo": "lineal",
+                    "infraestructura": {
+                        "infraestructura": "Linux Cluster",
+                        "az": [
+                            "1",
+                            "2"
+                        ]
+                    },
+                    "vms": [
+                        {
+                            "n_vcpus": 2,
+                            "memoria": 2,
+                            "filesystem": {
+                                "filesystem": "CopyOnWrite",
+                                "size": 10
+                            },
+                            "imagen_id": 1,
+                            "internet": True
+                        },
+                        {
+                            "n_vcpus": 1,
+                            "memoria": 1,
+                            "filesystem": {
+                                "filesystem": "CopyOnWrite",
+                                "size": 10
+                            },
+                            "imagen_id": 1,
+                            "internet": True
+                        },
+                        {
+                            "n_vcpus": 1,
+                            "memoria": 1,
+                            "filesystem": {
+                                "filesystem": "CopyOnWrite",
+                                "size": 10
+                            },
+                            "imagen_id": 1,
+                            "internet": True
+                        }
+                    ]
+                }
+        result = self.driver.recursos_suficientes_topologia(data_pruebas)
+        print(result)
 
     # Opciones del menu principal
 
@@ -45,7 +91,7 @@ class Manager:
                 # 2. El usuario ingresa el ID de la topologia
                 topology_id = self.validador.obtener_int(
                     'Ingrese el ID de la Topología: ')
-                # 3. Sise ingresa una opcion valida, se obtiene el json
+                # 3. Si se ingresa una opcion valida, se obtiene el json
                 if(topology_id):
                     self.driver.topologia_json(topology_id)
                 else:
@@ -106,11 +152,10 @@ class Manager:
         print()
         if (opcion == 1):
             # 3. se verifica que existen los recursos suficientes y se separan los recursos en la DB
-            [recursos_suficientes, result] = self.driver.separar_recursos_topologia(nueva_topologia)
-            self.logging.log(result)
+            recursos_suficientes = self.driver.recursos_suficientes_topologia(nueva_topologia)
                 
             if recursos_suficientes:
-                # 4. ya que ya se separaron los recursos en la db, se procede a crear la topologia
+                # 4. se procede a crear la topologia
                 result = self.driver.crear_topologia(nueva_topologia)
                 self.logging.log(result)
             else:
