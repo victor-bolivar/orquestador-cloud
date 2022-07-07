@@ -14,52 +14,63 @@ class Manager:
         self.driver = Driver()
         self.validador = Validador()
         self.logging = Logging()
-        # pruebas
-        data_pruebas =  {
-                    "nombre": "aa",
-                    "tipo": "lineal",
-                    "infraestructura": {
-                        "infraestructura": "Linux Cluster",
-                        "az": [
-                            "1",
-                            "2"
-                        ]
-                    },
-                    "vms": [
-                        {
-                            "n_vcpus": 2,
-                            "memoria": 2,
-                            "filesystem": {
-                                "filesystem": "CopyOnWrite",
-                                "size": 10
-                            },
-                            "imagen_id": 1,
-                            "internet": True
-                        },
-                        {
-                            "n_vcpus": 1,
-                            "memoria": 1,
-                            "filesystem": {
-                                "filesystem": "CopyOnWrite",
-                                "size": 10
-                            },
-                            "imagen_id": 1,
-                            "internet": True
-                        },
-                        {
-                            "n_vcpus": 1,
-                            "memoria": 1,
-                            "filesystem": {
-                                "filesystem": "CopyOnWrite",
-                                "size": 10
-                            },
-                            "imagen_id": 1,
-                            "internet": True
-                        }
-                    ]
-                }
-        result = self.driver.recursos_suficientes_topologia(data_pruebas)
-        print(result)
+
+        # #metricas de cada worker
+        # list_cpu_usage = self.driver.linuxc_worker1.list_cpu_usage('/home/w1/worker1_cpu_metrics')
+        # cpu_avg = self.driver.cpu_exponential_weigted_average(list_cpu_usage)  # exponential weigted average
+        # print(cpu_avg)
+        # list_cpu_usage = self.driver.linuxc_worker2.list_cpu_usage('/home/w2/worker2_cpu_metrics')
+        # cpu_avg = self.driver.cpu_exponential_weigted_average(list_cpu_usage)  # exponential weigted average
+        # print(cpu_avg)
+        # list_cpu_usage = self.driver.linuxc_worker3.list_cpu_usage('/home/wk3/worker3_cpu_metrics')
+        # cpu_avg = self.driver.cpu_exponential_weigted_average(list_cpu_usage)  # exponential weigted average
+        # print(cpu_avg)
+        # # pruebas
+        # data_pruebas =  {
+        #             "nombre": "aa",
+        #             "tipo": "lineal",
+        #             "infraestructura": {
+        #                 "infraestructura": "Linux Cluster",
+        #                 "az": [
+        #                     "1",
+        #                     "2"
+        #                 ]
+        #             },
+        #             "vms": [
+        #                 {
+        #                     "n_vcpus": 2,
+        #                     "memoria": 2,
+        #                     "filesystem": {
+        #                         "filesystem": "CopyOnWrite",
+        #                         "size": 10
+        #                     },
+        #                     "imagen_id": 1,
+        #                     "internet": True
+        #                 },
+        #                 {
+        #                     "n_vcpus": 1,
+        #                     "memoria": 1,
+        #                     "filesystem": {
+        #                         "filesystem": "CopyOnWrite",
+        #                         "size": 10
+        #                     },
+        #                     "imagen_id": 1,
+        #                     "internet": True
+        #                 },
+        #                 {
+        #                     "n_vcpus": 1,
+        #                     "memoria": 1,
+        #                     "filesystem": {
+        #                         "filesystem": "CopyOnWrite",
+        #                         "size": 10
+        #                     },
+        #                     "imagen_id": 1,
+        #                     "internet": True
+        #                 }
+        #             ]
+        #         }
+        # result = self.driver.crear_topologia(data_pruebas)
+        # print(result)
 
     # Opciones del menu principal
 

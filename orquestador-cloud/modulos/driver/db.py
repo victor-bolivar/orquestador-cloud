@@ -72,10 +72,9 @@ class DB:
 
     def obtener_topologias(self):
         data = self.get('select * from Topologia')
-        # TODO parse data
-        print(data)
         return data
     
     def obtener_workers(self):
         data = self.get('select * from Worker')
         return data
+

@@ -1,22 +1,21 @@
 #!/usr/bin/env python3
 
-from cgitb import reset
-from datetime import datetime, timedelta
 from syslog import syslog
-from numpy import rec
 from prettytable import PrettyTable
 import pandas as pd
 import csv
 
 from .ssh import SSH
 from .db import DB
+
 from ..config.crendentials import config_controller_lc
 from ..config.crendentials import config_db_linuxcluster
-from ..config.crendentials import config_openstack
 from ..config.crendentials import config_w1_lc
 from ..config.crendentials import config_w2_lc
 from ..config.crendentials import config_w3_lc
-from ..logging.Exceptions import InputException
+
+from ..config.crendentials import config_openstack
+from ..config.crendentials import config_db_openstack
 
 import openstack
 openstack.enable_logging(debug=True, path='./modulos/logging/orquestador.log')
@@ -58,15 +57,51 @@ class Driver():
                                 password=config_openstack['password'],
                                 user_domain_name=config_openstack['user_domain_name'],
                                 project_domain_name=config_openstack['project_domain_name'])
+        self.openstack_db = DB(config_db_openstack['host'],
+                            config_db_openstack['username'],
+                            config_db_openstack['password'],
+                            config_db_openstack['database'])
 
     # Linux Cluster: Scheduler
 
-    def filter(self) -> list:
-        # TODO
-        # se devuelve la lista de workers validos para almacenar una vm con los requisitos
-        pass
+    def filter(self, vm: dict, az: list) -> list:
+        '''
+            inputs
+            ---
+            vm:  
+                    {
+                        "n_vcpus": 2,
+                        "memoria": 2,
+                        "filesystem": {
+                            "filesystem": "CopyOnWrite"
+                        },
+                        "imagen_id": 1,
+                        "internet": true
+                    }
+            
+            az: 
+                ["1", "2"]
 
-    def cpu_exponential_weigted_average(self, data):
+            outputs:
+            ---
+            workers_filter: 
+                [{'idWorker': 1, 'hostname': 'worker1', 'vcpuLibres': '2', 'memoriaLibre': '70', 'discoLibre': '30', 'vcpu': '3', 'memoria': '16', 'disco': '50'}, 
+                {'idWorker': 2, 'hostname': 'worker2', 'vcpuLibres': '3', 'memoriaLibre': '50', 'discoLibre': '50', 'vcpu': '3', 'memoria': '16', 'disco': '50'}]
+
+        '''
+        workers_db = self.linuxc_db.obtener_workers() 
+        workers_az = [] # lista con los workers que pertenecen al AZ
+        for worker in workers_db:
+            if (str(worker['idWorker']) in az):
+                workers_az.append(worker)
+        workers_filter = [] # donde se almacenara la info de los workers que cuentan con recursos suficientes
+        for worker in workers_az:
+                if ( (int(worker['vcpuLibres'])>=vm['n_vcpus']) and (int(worker['memoriaLibre'])>=vm['memoria']) and (int(worker['discoLibre'])>=vm['filesystem']['size'])):
+                    # y se añade a la lista de workers con recursos suficientes
+                    workers_filter.append(worker)
+        return workers_filter
+
+    def cpu_exponential_weigted_average(self, data) -> float:
         '''
             Se devuelve el uso promedio (%) calculado en base a Exponential Moving Average,
             lo que le da mas peso a las ultima metricas
@@ -76,54 +111,82 @@ class Driver():
             inputs
             ---
             data: lista con los usos (ex:[80,60,50,20])
+
+            output
+            ---
+            cpu_usage: valor de 0 a 1
         '''
         # create a dataframe
         cpu_metrics = pd.DataFrame({'cpu_usage': data})
         # finding EMA
         ema = cpu_metrics.ewm(alpha=0.5).mean()
-        return ema["cpu_usage"].iloc[-1]
+        return float(ema["cpu_usage"].iloc[-1])/100
 
-    def coeficiente_carga(self):
-        pass
+    def scheduler(self, workers) -> dict:
+        '''
+            Funcion que recibe como argumento la lista de disccionarios con 
+            informacion de cada worker dentro del AZ con el fin de calcular 
+            el coeficiente de carga.
 
-    def scheduler_cluster_linux(self):
-        # TODO
-        # filtro: por recursos disponibles y por az del usuario
-        # obtener metricas de worker1
-        # exponential weigted average
-        # calcular coeficiente de carga
+            Este coeficiente se calcula bajo la siguiente formula:
+                coeficiente_carga = (cpu_reservados/cpu_total)*0.1 + cpu_avg*0.9
+            
+            Una vez calculado, se define el worker mas optimo (menor coeficiente)
+            y se devuelve un diccionario con la informacion de este.
 
-        # Worker 1
-        list_cpu_usage = self.linuxc_worker1.list_cpu_usage('/home/w1/worker1_cpu_metrics')
-        worker1_cpu_avg = self.cpu_exponential_weigted_average(list_cpu_usage)  # exponential weigted average
-        print(worker1_cpu_avg)
+            input
+            ---
+            workers(list): informacion obtenida de la base de datos
+                 [
+                    {'idWorker': 1, 'hostname': 'worker1', 'vcpuLibres': '2', 'memoriaLibre': '70', 'discoLibre': '30', 'vcpu': '3', 'memoria': '16', 'disco': '50'},
+                    {'idWorker': 2, 'hostname': 'worker2', 'vcpuLibres': '3', 'memoriaLibre': '50', 'discoLibre': '50', 'vcpu': '3', 'memoria': '16', 'disco': '50'},
+                    {'idWorker': 3, 'hostname': 'worker3', 'vcpuLibres': '2', 'memoriaLibre': '40', 'discoLibre': '50', 'vcpu': '5', 'memoria': '32', 'disco': '80'}
+                ]
+            
+            output
+            ---
+            worker_asignado(dict):
+                    {'idWorker': 1, 'hostname': 'worker1', 'vcpuLibres': '2', 'memoriaLibre': '70', 'discoLibre': '30', 'vcpu': '3', 'memoria': '16', 'disco': '50', 'coef':0.43059895833333334},
 
-        # Worker 2
-        list_cpu_usage = self.linuxc_worker2.list_cpu_usage('/home/w2/worker2_cpu_metrics')
-        worker2_cpu_avg = self.cpu_exponential_weigted_average(list_cpu_usage)  # exponential weigted average
-        print(worker2_cpu_avg)
 
-        # Worker 3
-        list_cpu_usage = self.linuxc_worker3.list_cpu_usage('/home/wk3/worker3_cpu_metrics')
-        worker3_cpu_avg = self.cpu_exponential_weigted_average(list_cpu_usage)  # exponential weigted average
-        print(worker3_cpu_avg)
-
-        # lo mismo para los otros workers
-        # se compara con el resto de workers
-        worker_asignado = None
-        return worker_asignado
+        '''
+        #   Primero, se calcula el COEFICIENTE DE CARGA para cada worker
+        for worker in workers:
+            # 1. cpu_avg -> se obtiene el uso promedio del CPU (%) 
+            if worker['hostname'] == 'worker1':
+                list_cpu_usage = self.linuxc_worker1.list_cpu_usage('/home/w1/worker1_cpu_metrics')
+                cpu_avg = self.cpu_exponential_weigted_average(list_cpu_usage)  # exponential weigted average
+            elif worker['hostname'] == 'worker2':
+                # Worker 2
+                list_cpu_usage = self.linuxc_worker2.list_cpu_usage('/home/w2/worker2_cpu_metrics')
+                cpu_avg = self.cpu_exponential_weigted_average(list_cpu_usage)  # exponential weigted average
+            elif worker['hostname'] == 'worker3':
+                # Worker 3
+                list_cpu_usage = self.linuxc_worker3.list_cpu_usage('/home/wk3/worker3_cpu_metrics')
+                cpu_avg = self.cpu_exponential_weigted_average(list_cpu_usage)  # exponential weigted average
+            # 2. se obtiene la cantidad de CPU libre
+            cpu_reservados = int(worker['vcpu']) - int(worker['vcpuLibres'])
+            cpu_total = int(worker['vcpu'])
+            # 3. se calcula el coeficiente de carga
+            worker['coef'] = (cpu_reservados/cpu_total)*0.1 + cpu_avg*0.9
+        # Ahora, se obtiene el worker con el menor coeficiente de carga
+        return min(workers, key=lambda x:x['coef'])
 
     def crear_topologia(self, nueva_topologia) -> dict:
         if (nueva_topologia['infraestructura']['infraestructura'] == "Linux Cluster"):
             # se obtiene los ID de los workers dentro de la AZ
             az = nueva_topologia['infraestructura']['az']
-            # 
+            # se analiza para cada VM
+            for vm in nueva_topologia['vms']:
+                # 1. filter
+                workers = self.filter(vm, az)
+                # 2. obtener worker asignado
+                worker_asignado = self.scheduler(workers)
 
-            workers_db = self.linuxc_db.obtener_workers()
+                break # solo vm1 por ahora
             
 
         elif (nueva_topologia['infraestructura']['infraestructura'] == "OpenStack"):
-            # TODO
             pass
 
 
@@ -183,7 +246,25 @@ class Driver():
             return recursos_suficientes
         # TODO caso openstack
 
-    # Funciones
+    # Funciones completadas
+
+    def listar_topologias(self) -> None:
+        # obtener data de la db
+        linuxc_db = self.linuxc_db.obtener_topologias()
+        openstack_db = self.openstack_db.obtener_topologias()
+        # armar tabla
+        x = PrettyTable()
+        x.field_names = ["ID", "Nombre", "Tipo", "Infraestructura"]
+        for row in linuxc_db:
+            x.add_row([row['idTopologia'], row['nombre'], row['tipo'], 'Linux Cluster'])
+        for row in openstack_db:
+            x.add_row([row['idTopologia'], row['nombre'], row['tipo'], 'OpenStack'])
+        # Espaciado antes de imprimar la tabla
+        x = '\n' + str(x)
+        x = x.replace("\n", "\n                ")
+        print(x)
+
+    # Funciones en desarrollo
 
     def importar_imagen(self, data) -> dict:
         if (data['opcion'] == 1):
@@ -205,18 +286,9 @@ class Driver():
             'mensaje': 'Imagen importada correctamente'
         }
 
-    # Funciones pendientes
+    
 
-    def listar_topologias(self) -> None:
-        x = PrettyTable()
-        x.field_names = ["ID", "Nombre", "Tipo", "Infraestructura"]
-        x.add_row([1, "Mi 1ra Topología", "Malla", "Linux Cluster"])
-        x.add_row([2, "Primera Topología", "Lineal", "Linux Cluster"])
-        x.add_row([3, "My first Topology", "Anillo", "Linux Cluster"])
-        # Espaciado antes de imprimar la tabla
-        x = '\n' + str(x)
-        x = x.replace("\n", "\n                ")
-        print(x)
+    # Funciones pendientes
 
     def topologia_json(self, topology_id) -> None:
         # verificar que sea un ID valido

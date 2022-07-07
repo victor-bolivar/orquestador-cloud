@@ -54,3 +54,9 @@ config_openstack = {
     'user_domain_name':'Default',
     'project_domain_name':'Default'
 }
+config_db_openstack = {
+    'username': 'proyecto',
+    'password': 'proyecto',
+    'host':     '10.20.12.247',  
+    'database': 'proyecto'
+}
