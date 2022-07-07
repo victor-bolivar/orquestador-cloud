@@ -17,7 +17,7 @@ from ..config.crendentials import config_openstack
 #openstack.enable_logging(debug=True, path='./modulos/logging/orquestador.log')
 
 
-class Enlace():
+class Driver():
     def __init__(self) -> None:
         # Arquitectura#1 : Linux Cluster
         self.linuxc_db = DB(config_db_linuxcluster['host'],
@@ -468,7 +468,6 @@ class Enlace():
             devuelve la tabla para esa infraestructura.
         '''
         return self.workers_info()['openstack']
-
 
     def crear_topologia(self, nueva_topologia) -> dict:
         print('[+] Se creó correctamente')

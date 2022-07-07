@@ -2,16 +2,16 @@
 
 from ..logging.Exceptions import InputException
 from ..validador.validador import Validador
-from ..enlace.enlace import Enlace
+from ..driver.driver import Driver
 from ..logging.Logging import Logging
 
 import sys
 import json
 import webbrowser
 
-class UI:
+class Manager:
     def __init__(self):
-        self.enlace = Enlace()
+        self.driver = Driver()
         self.validador = Validador()
         self.logging = Logging()
 
@@ -36,30 +36,30 @@ class UI:
             'Ingrese la opcion: ', minValor=1, maxValor=5)
         if(opcion):
             if (opcion == 1):
-                self.enlace.listar_topologias()
+                self.driver.listar_topologias()
 
             elif (opcion == 2):
                 # 1. Se listan las topologias para que el usuario ingrese el ID
-                self.enlace.listar_topologias()
+                self.driver.listar_topologias()
                 print()  # print new line
                 # 2. El usuario ingresa el ID de la topologia
                 topology_id = self.validador.obtener_int(
                     'Ingrese el ID de la Topología: ')
                 # 3. Sise ingresa una opcion valida, se obtiene el json
                 if(topology_id):
-                    self.enlace.topologia_json(topology_id)
+                    self.driver.topologia_json(topology_id)
                 else:
                     raise InputException()
 
             elif (opcion == 3):
                 # 1. Se listan las topologias para que el usuario ingrese el ID
-                self.enlace.listar_topologias()
+                self.driver.listar_topologias()
                 print()  # print new line
                 # 2. El usuario ingresa el ID de la topologia
                 topology_id = self.validador.obtener_int(
                     'Ingrese el ID de la Topología: ')
                 if(topology_id):
-                    topologia_json_visualizador = self.enlace.topologia_visualizador(
+                    topologia_json_visualizador = self.driver.topologia_visualizador(
                         topology_id)
 
                     # se guarda en ./modulos/visualizador/data.json
@@ -77,7 +77,7 @@ class UI:
 
             elif (opcion == 4):
                 print()
-                self.enlace.listar_imagenes()
+                self.driver.listar_imagenes()
 
             elif (opcion == 5):
                 pass
@@ -89,8 +89,8 @@ class UI:
 
     def opcion_2(self):
         # 1. se obtiene la informacion de los workers e imagenes que necesita el modulo validador
-        workers_info = self.enlace.workers_info()
-        imagenes = self.enlace.obtener_imagenes()
+        workers_info = self.driver.workers_info()
+        imagenes = self.driver.obtener_imagenes()
         # 2. se pide la informacion de la topologia a crear al usuario
         nueva_topologia = self.validador.nueva_topologia(
             workers_info, imagenes)
@@ -106,12 +106,12 @@ class UI:
         print()
         if (opcion == 1):
             # 3. se verifica que existen los recursos suficientes y se separan los recursos en la DB
-            [recursos_suficientes, result] = self.enlace.separar_recursos_topologia(nueva_topologia)
+            [recursos_suficientes, result] = self.driver.separar_recursos_topologia(nueva_topologia)
             self.logging.log(result)
                 
             if recursos_suficientes:
                 # 4. ya que ya se separaron los recursos en la db, se procede a crear la topologia
-                result = self.enlace.crear_topologia(nueva_topologia)
+                result = self.driver.crear_topologia(nueva_topologia)
                 self.logging.log(result)
             else:
                 print('[-] No se realizo la creacion de la topologia debido a recursos insuficientes en el slice')
@@ -142,22 +142,22 @@ class UI:
         if(opcion):
             if (opcion == 1):
                 # 1. se listan las topologias
-                self.enlace.listar_topologias()
+                self.driver.listar_topologias()
                 # 2. el usuario ingresa el ID de la topologia a eliminar
                 id_topologia = self.validador.obtener_int('\nIngrese el ID: ')
                 if(id_topologia):
                     # 3. se elima la topologia
-                    result = self.enlace.eliminar_topologia(id_topologia)
+                    result = self.driver.eliminar_topologia(id_topologia)
                     self.logging.log(result)
                 else:
                     raise InputException()
 
             elif (opcion == 2):
                 # 1. se listan las topologias
-                self.enlace.listar_topologias()
+                self.driver.listar_topologias()
 
                 # 2. se obtiene la tabla de imagenes de la db que necesita el modulo validador
-                tabla_imagenes = self.enlace.obtener_imagenes()
+                tabla_imagenes = self.driver.obtener_imagenes()
                 # 3. se obtiene la data del usuario para la creacion de la VM
                 data = self.validador.agregar_nodo(tabla_imagenes)
                 
@@ -173,12 +173,12 @@ class UI:
                 if (opcion == 1):
 
                     # 3. se verifica que existen los recursos suficientes y se separan los recursos en la DB
-                    [recursos_suficientes, result] = self.enlace.separar_recursos_nodo(data)
+                    [recursos_suficientes, result] = self.driver.separar_recursos_nodo(data)
                     self.logging.log(result)
                     
                     if recursos_suficientes:
                         # 4. ya que ya se separaron los recursos en la db, se procede a crear el nodo
-                        result = self.enlace.agregar_nodo(data)
+                        result = self.driver.agregar_nodo(data)
                         self.logging.log(result)
                     else:
                         print('[-] No se realizo la creacion del nodo debido a recursos insuficientes en el slice')
@@ -191,17 +191,17 @@ class UI:
 
             elif (opcion == 3):
                 # 1. se listan las topologias y se pide el ID
-                self.enlace.listar_topologias()
+                self.driver.listar_topologias()
                 id_topologia = self.validador.obtener_int(
                     '\nIngrese el ID de la topologia: ')
                 if(id_topologia):
                     # 2. se listan los nodos y se pide el ID
-                    self.enlace.listar_nodos(id_topologia)
+                    self.driver.listar_nodos(id_topologia)
                     id_nodo = self.validador.obtener_int(
                         '\nIngrese el ID del nodo: ')
                     if(id_nodo):
                         # 3. se elimnina el nodo
-                        result = self.enlace.eliminar_nodo(id_topologia, id_nodo)
+                        result = self.driver.eliminar_nodo(id_topologia, id_nodo)
                         self.logging.log(result)
                     else:
                         raise InputException()
@@ -210,39 +210,39 @@ class UI:
 
             elif (opcion == 4):
                 # 1. se listan las topologias y se pide el ID
-                self.enlace.listar_topologias()
+                self.driver.listar_topologias()
                 id_topologia = self.validador.obtener_int(
                     '\nIngrese el ID de la topologia: ')
                 if(id_topologia):
                     print()
                     # 2. se listan los workers actuales en la topologia
-                    self.enlace.listar_workers_actuales(id_topologia)
+                    self.driver.listar_workers_actuales(id_topologia)
                     
                     # 3. se obtiene de la db un resumen de las metricas de los workers y los IDs de workers para esa infraestructura
-                    workers_info = self.enlace.workers_info_slice(id_topologia)
+                    workers_info = self.driver.workers_info_slice(id_topologia)
                     workers_ids = ['1001', '1002', '1003'] # TODO
                     # 4. se pide al usuario que workers desea añadir
                     data = self.validador.aumentar_slice(workers_info, workers_ids)
                     # 5. se añade los workers al slice
-                    result = self.enlace.aumentar_slice(data)
+                    result = self.driver.aumentar_slice(data)
                     self.logging.log(result)
                 else:
                     raise InputException()
 
             elif (opcion == 5):
                 # 1. se listan las topologias y se pide el ID
-                self.enlace.listar_topologias()
+                self.driver.listar_topologias()
                 id_topologia = self.validador.obtener_int(
                     '\nIngrese el ID de la topologia: ')
                 if(id_topologia):
                     # 2. se listan los nodos y se pide el ID 
-                    self.enlace.listar_nodos(id_topologia)
+                    self.driver.listar_nodos(id_topologia)
                     id_nodo = self.validador.obtener_int(
                         '\nIngrese el ID del nodo: ')
 
                     if(id_nodo):
                         # 3. se da conectividad a internet al nodo especificado
-                        result = self.enlace.conectar_nodo_internet(id_nodo)
+                        result = self.driver.conectar_nodo_internet(id_nodo)
                         self.logging.log(result)
                     else:
                         raise InputException()
@@ -253,7 +253,7 @@ class UI:
                 # 1. se obtien la informacion de la imagen a importar
                 data = self.validador.importar_imagen()  
                 # 2. se importa la imagen
-                result = self.enlace.importar_imagen(data)
+                result = self.driver.importar_imagen(data)
                 # 3. se loggea el resultado
                 self.logging.log(result)
             elif (opcion == 7):
