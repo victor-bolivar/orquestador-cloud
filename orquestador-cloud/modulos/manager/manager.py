@@ -15,6 +15,8 @@ class Manager:
         self.validador = Validador()
         self.logging = Logging()
 
+        self.driver.topologia_json(1)
+
         # #metricas de cada worker
         # list_cpu_usage = self.driver.linuxc_worker1.list_cpu_usage('/home/w1/worker1_cpu_metrics')
         # cpu_avg = self.driver.cpu_exponential_weigted_average(list_cpu_usage)  # exponential weigted average

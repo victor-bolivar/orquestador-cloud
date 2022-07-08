@@ -3,6 +3,7 @@
 from syslog import syslog
 from prettytable import PrettyTable
 import pandas as pd
+import json
 import csv
 
 from .ssh import SSH
@@ -286,172 +287,87 @@ class Driver():
             'mensaje': 'Imagen importada correctamente'
         }
 
-    
+    def topologia_json(self, topology_id) -> None:
+        if topology_id < 1000:
+            # si el ID de la topologia es < 1000, se trata de una topologia en Linux Cluster
+            topologia = self.linuxc_db.get('select * from Topologia where idTopologia=%s', topology_id)[0]
+            az = self.linuxc_db.get('SELECT * FROM Topologia_has_Worker tw  INNER JOIN Worker w ON w.idWorker = tw.Worker_idWorker INNER JOIN Topologia t ON t.idTopologia = tw.Topologia_idTopologia where Topologia_idTopologia=%s', topology_id)
+            vlans = self.linuxc_db.get('select * from Vlan where Topologia_idTopologia=%s', topology_id)
+            # vms e interfaces
+            vms = self.linuxc_db.get('select * from VM where Topologia_idTopologia=%s', topology_id)
+            vm_parsed = []
+            for vm in vms:
+                # parsear el nombre de la imagen
+                imagen_id = vm["Imagen_idImagen"]
+                imagen_nombre = self.linuxc_db.get('select * from Imagen where idImagen=%s', imagen_id)[0]['nombre']
+                # parsear las interfaces
+                vm_id = vm["idVM"]
+                interfaces = self.linuxc_db.get('select * from Interfaz where VM_idVM=%s', vm_id)
+                interfaces_parsed = []
+                for interfaz in interfaces:
+                    interfaces_parsed.append({
+                        "id": interfaz['idInterfaz'],
+                        "vlanID": interfaz['Vlan_idVlan'],
+                        "direccion_ip": interfaz['direccionIP'],
+                        "conexionInternet": True if (int(interfaz['internet'])==1) else False,
+                        "nombre": interfaz['nombre']
+                        
+                    })
+                # parseo final de vm
+                vm_parsed.append({
+                    "id": vm["idVM"],
+                    "nombre": vm["nombre"],
+                    "imagen": imagen_nombre,
+                    "vcpu": int(vm["vCPU"]),
+                    "memoria": int(vm["memoria"]),
+                    "filesystem": vm["tipoFilesystem"],
+                    "disco": int(vm["tamaño"]),
+                    "interfaces": interfaces_parsed
+                })
+
+        elif topology_id < 2000:
+            # TODO OpenStack
+            pass
+
+        # se parsean las workers en el az
+        az_parsed = []
+        for worker in az:
+            az_parsed.append({
+                    "idWorker": worker['Worker_idWorker'],
+                    "hostname": worker['hostname'],
+                    "cpuLibres": int(worker['vcpuLibres']),
+                    "memoriaLibre": int(worker['memoriaLibre']),
+                    "discoLibre": int(worker['discoLibre']),
+                    "cpuTotales": int(worker['vcpu']),
+                    "memoriaTotal": int(worker['memoria']),
+                    "discoTotal": int(worker['disco']),
+            })
+        # se parsean las vlans
+        vlans_parsed = []
+        for vlan in vlans:
+            vlans_parsed.append({
+                "id": vlan['idVlan'],
+                "gateway": vlan["gateway"],
+                "dhcpServer": vlan["dhcpServer"],
+                "network": vlan["network"]
+        })
+        # parseo final
+        topologia_json = {
+                "id": topologia['idTopologia'],
+                "nombre": topologia["nombre"], 
+                "tipo": topologia["tipo"],
+                "infraestructura": "Linux Cluster",
+                "az": az_parsed,
+                "vlans": vlans_parsed,
+                "vms": vm_parsed
+        }
+        topologia_json = json.dumps(topologia_json, indent=4)
+        topologia_json = '\n' + str(topologia_json)
+        topologia_json = topologia_json.replace("\n", "\n                ")
+        print(topologia_json)
+        
 
     # Funciones pendientes
-
-    def topologia_json(self, topology_id) -> None:
-        # verificar que sea un ID valido
-        if(topology_id == 1):
-            print('''
-                                {
-                                    "ID": 1,
-                                    "Nombre": "Mi 1ra Topología",
-                                    "Tipo": "Malla",
-                                    "cantidad de enlaces": "4",
-                                    "vlans"[
-                                        {
-                                            "idvlan":"1",
-                                            "numeroVlan": "10",
-                                            "red": "192.168.10.0/24"
-                                            "dhcpServer": "192.168.10.2",
-                                            "gateway": "192.168.10.1",
-                                        },
-                                        {
-                                            "idvlan":"2",
-                                            "numeroVlan": "20"
-                                            "red": "192.168.20.0/24"
-                                            "dhcpServer": "192.168.20.2",
-                                            "gateway": "192.168.20.1",
-                                        },
-                                        {
-                                            "idvlan":"3",
-                                            "numeroVlan": "30"
-                                            "red": "192.168.30.0/24"
-                                            "dhcpServer": "192.168.30.2",
-                                            "gateway": "192.168.30.1",
-                                        },
-                                    ]
-                                    "cantidad de enlaces": "4",
-                                    "vms": [
-                                        {   
-                                            "idVM": "12",
-                                            "nombre": "vm80",
-                                            "vlan": 10
-                                            "ip": "192.168.10.10",
-                                            "gateway": "192.168.10.1",
-                                            "keypair": "key pair 1"
-                                        },
-                                        {   
-                                            "idVM": "12",
-                                            "nombre": "vm80",
-                                            "vlan": 20
-                                            "ip": "192.168.20.10",
-                                            "gateway": 192.168.20.1,
-                                            "keypair": "key pair 1"
-                                        },
-                                        {   
-                                            "idVM" : "12",
-                                            "nombre" : "vm80",
-                                            "vlan": 30
-                                            "ip": "192.168.30.10",
-                                            "gateway": 192.168.30.1,
-                                            "keypair" : "key pair 1"
-                                        },
-                                    ]
-                                }                                 
-                            ''')
-        elif(topology_id == 2):
-            print('''
-                                {
-                                    "ID": 1,
-                                    "Nombre": "Primera Topología",
-                                    "Tipo": "Malla",
-                                    "dhcpServer": "x.x.x.x",
-                                    "cantidad de enlaces": "4",
-                                    "vlans"[
-                                        {
-                                            "idvlan":"1",
-                                            "numeroVlan": "10"
-                                        },
-                                        {
-                                            "idvlan":"2",
-                                            "numeroVlan": "20"
-                                        },
-                                        {
-                                            "idvlan":"3",
-                                            "numeroVlan": "30"
-                                        },
-                                    ]
-                                    "vms": [
-                                        {   
-                                            "idVM": "12",
-                                            "nombre": "vm80",
-                                            "vlan": 10
-                                            "ip": "192.168.10.20",
-                                            "gateway": "192.168.10.1",
-                                            "keypair": "key pair 1"
-                                        },
-                                        {   
-                                            "idVM": "12",
-                                            "nombre": "vm80",
-                                            "vlan": 20
-                                            "ip": "192.168.20.20",
-                                            "gateway": 192.168.20.1,
-                                            "keypair": "key pair 1"
-                                        },
-                                        {   
-                                            "idVM" : "12",
-                                            "nombre" : "vm80",
-                                            "vlan": 30
-                                            "ip": "192.168.30.20",
-                                            "gateway": 192.168.30.1,
-                                            "keypair" : "key pair 1"
-                                        },
-                                    ]                                    
-                                },                            
-                            ''')
-        elif(topology_id == 3):
-            print('''
-                                {
-                                    "ID": 1,
-                                    "Nombre": "My first Topology",
-                                    "Tipo": "Malla",
-                                    "gateway": "192.168.0.255",
-                                    "dhcpServer": "x.x.x.x",
-                                    "cantidad de enlaces": "4",
-                                    "vlans"[
-                                        {
-                                            "idvlan":"1",
-                                            "numeroVlan": "10"
-                                        },
-                                        {
-                                            "idvlan":"2",
-                                            "numeroVlan": "20"
-                                        },
-                                        {
-                                            "idvlan":"3",
-                                            "numeroVlan": "30"
-                                        },
-                                    ]
-                                    "vms": [
-                                        {   
-                                            "idVM": "12",
-                                            "nombre": "vm80",
-                                            "vlan": 10
-                                            "ip": "192.168.10.30",
-                                            "gateway": "192.168.10.1",
-                                            "keypair": "key pair 1"
-                                        },
-                                        {   
-                                            "idVM": "12",
-                                            "nombre": "vm80",
-                                            "vlan": 20
-                                            "ip": "192.168.20.30",
-                                            "gateway": 192.168.20.1,
-                                            "keypair": "key pair 1"
-                                        },
-                                        {   
-                                            "idVM" : "12",
-                                            "nombre" : "vm80",
-                                            "vlan": 30
-                                            "ip": "192.168.30.30",
-                                            "gateway": 192.168.30.1,
-                                            "keypair" : "key pair 1"
-                                        },
-                                    ]           
-                                }
-                            ''')
 
     def topologia_visualizador(self, topology_id) -> None:
         # TODO con el topology_id obtener de la DB la informacion
