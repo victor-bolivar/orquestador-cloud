@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from nis import cat
 from syslog import syslog
 from prettytable import PrettyTable
 import pandas as pd
@@ -264,6 +265,28 @@ class Driver():
         x = '\n' + str(x)
         x = x.replace("\n", "\n                ")
         print(x)
+    
+    def listar_imagenes(self) -> None:
+        '''
+            Funcion que imprime una tabla con las imagenes disponibles
+        '''
+        print(self.obtener_imagenes())
+
+    def obtener_imagenes(self) -> str:
+        '''
+            Funcion que devuelve una tabla con las imagenes disponibles
+        '''
+        imagenes = self.linuxc_db.get('select * from Imagen order by categoria desc;')
+
+        # se arma la tabla
+        t = PrettyTable()
+        t.field_names = ["ID", "Tipo de imagen", "Nombre", "Ultimo uso"]
+        for imagen in imagenes:
+            t.add_row([imagen["idImagen"], imagen["categoria"], imagen["nombre"], imagen["fechaUltimoUso"]])
+        t = str(t)
+        t = '                '+str(t)
+        t = t.replace("\n", "\n                ")
+        return t
 
     # Funciones en desarrollo
 
@@ -366,82 +389,97 @@ class Driver():
         topologia_json = topologia_json.replace("\n", "\n                ")
         print(topologia_json)
         
-
-    # Funciones pendientes
-
     def topologia_visualizador(self, topology_id) -> None:
-        # TODO con el topology_id obtener de la DB la informacion
-        # TODO se formatea a JSON para el modulo visualizacion (usar el json de la opcion1.3)
+        if topology_id < 1000:
+            # si el ID de la topologia es < 1000, se trata de una topologia en Linux Cluster
+            # vms e interfaces
+            vms = self.linuxc_db.get('select * from VM where Topologia_idTopologia=%s', topology_id)
+            vm_parsed = []
+            enlaces_parsed = []
+            for vm in vms:
+                # parsear el nombre de la imagen
+                imagen_id = vm["Imagen_idImagen"]
+                # icono a usar dependiendo de la categoria
+                categoria_imagen = self.linuxc_db.get('select * from Imagen where idImagen=%s', imagen_id)[0]['categoria']
+                icon = ''
+                if categoria_imagen == 'seguridad': # TODO cambiar por Seguridad
+                    icon = 'firewall'
+                elif categoria_imagen == 'Networking':
+                    icon = 'router'
+                elif categoria_imagen == 'Server':
+                    icon = 'server'
+                # se añade
+                vm_parsed.append({
+                    "id": vm["idVM"],
+                    "name": vm["nombre"],
+                    "icon": icon,
+                })
+
+                # parsear las enlaces
+                vm_id = vm["idVM"]
+                interfaces = self.linuxc_db.get('select * from Interfaz where VM_idVM=%s', vm_id)
+                for interfaz in interfaces:
+                    # se evalua el target
+                    target_id = interfaz['target'] 
+                    if target_id == -1:
+                        tgt_device = 'Bus'
+                        tgt_ifname = ''
+                        tgt_icon = 'cloud'
+                    elif target_id <= -2:
+                        tgt_device = 'SW'
+                        tgt_ifname = '' # TODO evaluar si se puede colocar el puerto de la unterfaz del switch
+                        tgt_icon = 'switch'
+                    else:
+                        # TODO se hace otra consulta a la db (target_id = id de la otra interfaz a la cual se conecta)
+                        tgt_device = 'PC90'
+                        tgt_ifname = 'en8'
+                        tgt_icon = 'server'
+                        
+                    # se arma el json del enlace
+                    enlaces_parsed.append({
+                        "source": int(vm_id),
+                        "srcDevice": vm["nombre"],
+                        "srcIfName": interfaz['nombre'],
+
+                        "target": target_id,
+                        "tgtDevice": tgt_device,
+                        "tgtIfName": tgt_ifname,
+                    })
+
+        elif topology_id < 2000:
+            # TODO OpenStack
+            pass
+        
+        # se hace una verificacion, si se usa un bus (topologia lineal) o switch (topologia arbol) 
+        # para que se visualize se debe añadir a la lista de vm_parsed
+        for enlace in enlaces_parsed:
+            if enlace['target'] == -1:
+                vm_parsed.append({
+                    "id": -1,
+                    "name": "Bus",
+                    "icon": "cloud",
+                })
+                break
+            if enlace['target'] <= -2: # en topologia arbol hay +1 switch, entonces cada switch tendria un ID negativo a partir de -2
+                vm_parsed.append({
+                    "id": enlace['target'],
+                    "name": "SW",
+                    "icon": "switch",
+                })
+                break
+
         # opciones "icon": unknown, switch, router, server, phone, host, cloud, firewall
+        # target = -1 (bus / icono:cloud)
+        # target = -2 (switch)
+        # categoria = server (icono:server)
+        # categoria = networking (icono:router)
+        # categoria = segiridad (icono:firewall)
         topologia_json_visualizador = {
-            "nodes": [
-                {
-                    "id": 0,
-                    "name": "PC0",
-                    "icon": "host",
-                    "Management": "192.168.0.10/24",
-                    "vncLink": "https://tipo.vnrt/token=?"
-                },
-                {
-                    "id": 1,
-                    "name": "PC1",
-                    "icon": "host",
-                    "Management": "192.168.0.10/24",
-                    "vncLink": "https://tipo.vnrt/token=?"
-                },
-                {
-                    "id": 2,
-                    "name": "PC2",
-                    "icon": "host",
-                    "Management": "192.168.0.10/24",
-                    "vncLink": "https://tipo.vnrt/token=?"
-                }
-            ],
-            "links": [
-                {
-                    "source": 0,
-                    "target": 1,
-
-                    "srcDevice": "PC0",
-                    "tgtDevice": "PC1",
-
-                    "srcIfName": "ens1",
-                    "tgtIfName": "ens3"
-                },
-                {
-                    "source": 0,
-                    "target": 2,
-
-                    "srcDevice": "PC0",
-                    "tgtDevice": "PC2",
-
-                    "srcIfName": "ens2",
-                    "tgtIfName": "ens3"
-                }
-            ]
+            "nodes": vm_parsed,
+            "links": enlaces_parsed
         }
+        print(topologia_json_visualizador)
         return topologia_json_visualizador
-
-    def listar_imagenes(self) -> None:
-        '''
-            Funcion que imprime una tabla con las imagenes disponibles
-        '''
-        print(self.obtener_imagenes())
-
-    def obtener_imagenes(self) -> str:
-        '''
-            Funcion que devuelve una tabla con las imagenes disponibles
-        '''
-        t = PrettyTable()
-        t.field_names = ["ID", "Tipo de imagen", "Nombre"]
-        t.add_row(["1", "Networking", "CiscoIoS"])
-        t.add_row(["2", "Server", "CiscoIOS XRv"])
-        t.add_row(["3", "Security", "Ubuntu 20.04"])
-        t.add_row(["4", "Security", "Ubuntu 18.04"])
-        t = str(t)
-        t = '                '+str(t)
-        t = t.replace("\n", "\n                ")
-        return t
 
     def workers_info(self) -> dict:
         '''
@@ -485,7 +523,7 @@ class Driver():
             'linux_cluster': tabla_lc
         }
 
-    
+    # Funciones pendientes
     
     def separar_recursos_nodo(self, nuevo_nodo) -> list:
         '''
