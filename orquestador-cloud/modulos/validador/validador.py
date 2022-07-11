@@ -132,6 +132,8 @@ class Validador():
         vms = []
         for i in range(1, 4):
             print('            ------ Maquina virtual #'+str(i)+' ------\n')
+            nombre = input("Ingrese un nombre: ")
+            print()
             n_vcpus = self.obtener_numero_vcpus()
             memoria = self.obtener_memoria()
             filesystem = self.obtener_fs()
@@ -139,6 +141,7 @@ class Validador():
             internet = self.conectar_internet()
             print()
             vms.append({
+                'nombre': nombre,
                 'n_vcpus': n_vcpus,
                 'memoria': memoria,
                 'filesystem': filesystem,
@@ -333,7 +336,7 @@ class Validador():
                 }
             elif(opcion == 2):
                 tamaño = self.obtener_int(
-                    'Ingresar la cantidad de almacenamiento (Mínimo:10 GB | Máximo: 80 GB): ', minValor=10, maxValor=80)
+                    'Ingresar la cantidad de almacenamiento (Mínimo:1 GB | Máximo: 50 GB): ', minValor=1, maxValor=50)
                 print()
                 if (tamaño):
                     return {
@@ -408,6 +411,8 @@ class Validador():
 
     def agregar_nodo(self, tabla_imagenes:str) -> dict:
         id_topologia = self.obtener_int('\nIngrese el ID: ')
+        print()
+        nombre = input("Ingrese un nombre: ")
         print()
         n_vcpus = self.obtener_numero_vcpus()
         memoria = self.obtener_memoria()

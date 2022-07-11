@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
-from nis import cat
-from syslog import syslog
+from datetime import datetime
 from prettytable import PrettyTable
 import pandas as pd
 import json
 import csv
+import random
 
 from .ssh import SSH
 from .db import DB
@@ -174,32 +174,6 @@ class Driver():
         # Ahora, se obtiene el worker con el menor coeficiente de carga
         return min(workers, key=lambda x:x['coef'])
 
-    def crear_topologia(self, nueva_topologia) -> dict:
-        if (nueva_topologia['infraestructura']['infraestructura'] == "Linux Cluster"):
-            # se obtiene los ID de los workers dentro de la AZ
-            az = nueva_topologia['infraestructura']['az']
-            # se analiza para cada VM
-            for vm in nueva_topologia['vms']:
-                # 1. filter
-                workers = self.filter(vm, az)
-                # 2. obtener worker asignado
-                worker_asignado = self.scheduler(workers)
-
-                break # solo vm1 por ahora
-            
-
-        elif (nueva_topologia['infraestructura']['infraestructura'] == "OpenStack"):
-            pass
-
-
-
-        print('[+] Se creó correctamente')
-        result = {
-            'valor': 6,
-            'mensaje': 'Topologia creada correctamente'
-        }
-        return result
-
     def recursos_suficientes_topologia(self, nueva_topologia) -> bool:
         '''
             Dada la informacion ingresada por el usuario, se verifica que existan los recursos suficientes 
@@ -290,25 +264,113 @@ class Driver():
 
     # Funciones en desarrollo
 
-    def importar_imagen(self, data) -> dict:
-        if (data['opcion'] == 1):
-            # Subir archivo local
-            # 1. Linux Cluster
-            #self.linuxc_controller.subir_archivo(data['ruta'], '/home/grupo2/imagenes/'+data['categoria']+'/'+data['nombre'])
-            # TODO actualizar db
-            # TODO usar sdk para openstack
-            print('\n[+] Imagen importada correctamente')
-        elif(data['opcion'] == 2):
-            # Subir desde URL
-            # 1. Linux Cluster
-            #self.linuxc_controller.ejecutar_comando('wget '+data['url']+' -O /home/grupo2/imagenes/'+data['categoria']+'/'+data['nombre'])
-            # TODO actualizar db
-            # TODO usar sdk para openstack
-            print('\n[+] Imagen importada correctamente')
+    def crear_topologia(self, nueva_topologia) -> dict:
+        if (nueva_topologia['infraestructura']['infraestructura'] == "Linux Cluster"):
+            last_topologyid = self.linuxc_db.get('select max(idTopologia) from Topologia')[0]['max(idTopologia)']
+            topology_id = str(last_topologyid+1)
+
+            last_vlanid = self.linuxc_db.get('select max(idVlan) from Vlan')[0]['max(idVlan)']
+            if nueva_topologia['tipo'] == 'lineal':
+                # Tipo: Lineal
+                # 1. Crear la(s) red(es) 
+                vlan_id = str(last_vlanid + 1)
+                nombre = nueva_topologia['nombre']
+                red = "192.168."+vlan_id+".0/24"
+                gateway = "192.168."+vlan_id+".1"
+                gateway_w_netmask = "192.168."+vlan_id+".1/24"
+                dhcp_ip = "192.168."+vlan_id+".2/24"
+                dhcp_range = "192.168."+vlan_id+".10,192.168."+vlan_id+".254,255.255.255.0"
+
+                try:
+                    self.linuxc_controller.ejecutar_script_local('./modulos/driver/bash_scripts/create_network.sh', [nombre, vlan_id, red, gateway, dhcp_ip, dhcp_range, gateway_w_netmask])
+                    self.linuxc_db.save("INSERT INTO Topologia (idTopologia, nombre, tipo) VALUES (%s,%s,%s)", (topology_id, nueva_topologia['nombre'], 'lineal'))
+                    self.linuxc_db.save("insert into Vlan (idVlan, gateway, dhcpServer, network, Topologia_idTopologia) VALUES (%s, %s, %s, %s, %s)", (int(vlan_id), gateway_w_netmask, dhcp_ip, red, int(topology_id) ))
+                    for worker_id in nueva_topologia['infraestructura']['az']:
+                            self.linuxc_db.save("INSERT INTO Topologia_has_Worker (Topologia_idTopologia, Worker_idWorker) VALUES (%s,%s)", (topology_id, worker_id))
+                    # 2. Despliegue de VMs
+                    # se obtiene los ID de los workers dentro de la AZ
+                    az = nueva_topologia['infraestructura']['az']
+                    # se analiza para cada VM
+                    for vm in nueva_topologia['vms']:
+                        # 1. filter
+                        workers = self.filter(vm, az)
+                        # 2. obtener worker asignado
+                        worker_asignado = self.scheduler(workers)
+                        # 3. desplegar vm
+                        imagen = self.linuxc_db.get("select * from Imagen where idImagen=%s", vm['imagen_id'])[0]
+                        id_interfaz = int(self.linuxc_db.get('select max(idInterfaz) from Interfaz')[0]['max(idInterfaz)']) + 1 # para el puerto VNC se toma el id de la ultima interfaz creada (como es topologia lineal solo hay una interfaz por VM) y se le suma 5900 (que es el puerto a partir del cual se deifine las conexiones vnc) y se le suma 1 para obtener el puerto VNC de la nueva VM
+                        vnc_port = id_interfaz + 5900
+                        id_vm = int(self.linuxc_db.get('select max(idVM) from VM')[0]['max(idVM)']) + 1
+                        mac = "02:00:00:%02x:%02x:%02x" % (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+                        if worker_asignado['hostname'] == 'worker1':
+                            ruta_imagen = '/home/w1/imagenes/'+imagen['categoria']+'/'+imagen['nombre']
+                            self.linuxc_worker1.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', [vm['nombre'], str(vlan_id), str(vnc_port), ruta_imagen, mac])
+                            print('[+] vm desplegada en worker 1')
+                        elif worker_asignado['hostname'] == 'worker2':
+                            ruta_imagen = '/home/w2/imagenes/'+imagen['categoria']+'/'+imagen['nombre']
+                            self.linuxc_worker2.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', [vm['nombre'], str(vlan_id), str(vnc_port), ruta_imagen, mac])
+                            print('[+] vm desplegada en worker 2')
+                        elif worker_asignado['hostname'] == 'worker3':
+                            ruta_imagen = '/home/wk3/imagenes/'+imagen['categoria']+'/'+imagen['nombre']
+                            self.linuxc_worker3.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', [vm['nombre'], str(vlan_id), str(vnc_port), ruta_imagen, mac])
+                            print('[+] vm desplegada en worker 3')
+                        # 4. guardar info en DB
+                        internet = 1 if vm['internet']==True else 0
+                        self.linuxc_db.save("insert into VM (idVM, nombre, Topologia_idTopologia, Imagen_idImagen, Worker_idWorker, vCPU, memoria, tipoFilesystem, tamaño) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)", (str(id_vm), vm['nombre'], str(topology_id), str(vm['imagen_id']), str(worker_asignado['idWorker']), str(vm['n_vcpus']), str(vm['memoria']), vm['filesystem']['filesystem'], str(vm['filesystem']['size'])))
+                        self.linuxc_db.save("insert into Interfaz (idInterfaz, nombre, mac, VM_idVM, Vlan_idVlan, internet, target) VALUES (%s, %s, %s, %s, %s, %s, %s)", (str(id_interfaz), 'link_1', mac, str(id_vm), str(vlan_id), str(internet), str(-1) ))
+                        # se restan recursos en workers
+                        cpu_restante = int(worker_asignado['vcpuLibres']) - int(vm['n_vcpus'])
+                        memoria_restante = int(worker_asignado['memoriaLibre']) - int(vm['memoria'])
+                        disco_restante = int(worker_asignado['discoLibre']) - int(vm['filesystem']['size'])
+                        self.linuxc_db.save("UPDATE Worker SET vcpuLibres=%s, memoriaLibre=%s, discoLibre=%s where idWorker=%s", (cpu_restante, memoria_restante, disco_restante, worker_asignado['idWorker']))
+                except Exception as e:
+                    return {
+                        'valor': 3,
+                        'mensaje': 'ERROR en la creacion de la red para topologia lineal | '+str(e)
+                    }
+            else:
+                # TODO otro tipo de topologia
+                pass
+        elif (nueva_topologia['infraestructura']['infraestructura'] == "OpenStack"):
+            pass
+
+        print('[+] Se creó correctamente')
         return {
             'valor': 6,
-            'mensaje': 'Imagen importada correctamente'
+            'mensaje': 'Topologia creada correctamente: '+str(nueva_topologia)
         }
+
+    def importar_imagen(self, data) -> dict:
+        try: 
+            if (data['opcion'] == 1):
+                # Subir archivo local
+                # 1. Linux Cluster
+                self.linuxc_worker1.subir_archivo(data['ruta'], '/home/w1/imagenes/'+data['categoria']+'/'+data['nombre'])
+                self.linuxc_worker2.subir_archivo(data['ruta'], '/home/w2/imagenes/'+data['categoria']+'/'+data['nombre'])
+                self.linuxc_worker3.subir_archivo(data['ruta'], '/home/wk3/imagenes/'+data['categoria']+'/'+data['nombre'])
+                # TODO openstack
+            elif(data['opcion'] == 2):
+                # Subir desde URL
+                # 1. Linux Cluster
+                self.linuxc_worker1.ejecutar_comando('wget '+data['url']+' -O /home/w1/imagenes/'+data['categoria']+'/'+data['nombre'])
+                self.linuxc_worker2.ejecutar_comando('wget '+data['url']+' -O /home/w2/imagenes/'+data['categoria']+'/'+data['nombre'])
+                self.linuxc_worker3.ejecutar_comando('wget '+data['url']+' -O /home/wk3/imagenes/'+data['categoria']+'/'+data['nombre'])
+                # TODO openstack
+
+            last_imageid = self.linuxc_db.get('select max(idImagen) from Imagen')[0]['max(idImagen)']
+            image_id = str(last_imageid+1)
+            self.linuxc_db.save("INSERT INTO Imagen (idImagen, nombre, categoria, fechaUltimoUso) VALUES (%s, %s,%s,%s)", (image_id, data['nombre'], data['categoria'], str(datetime.today().strftime('%Y-%m-%d'))))
+            print('\n[+] Imagen importada correctamente')
+            return {
+                    'valor': 6,
+                    'mensaje': 'Imagen importada correctamente'
+                }
+        except Exception as e:
+            print(e)
+            return {
+                'valor': 3,
+                'mensaje': 'ERROR al importar imagen | '+str(e)
+            }
 
     def topologia_json(self, topology_id) -> None:
         if topology_id < 1000:
@@ -331,7 +393,7 @@ class Driver():
                     interfaces_parsed.append({
                         "id": interfaz['idInterfaz'],
                         "vlanID": interfaz['Vlan_idVlan'],
-                        "direccion_ip": interfaz['direccionIP'],
+                        "mac": interfaz['mac'],
                         "conexionInternet": True if (int(interfaz['internet'])==1) else False,
                         "nombre": interfaz['nombre']
                         
@@ -401,18 +463,11 @@ class Driver():
                 imagen_id = vm["Imagen_idImagen"]
                 # icono a usar dependiendo de la categoria
                 categoria_imagen = self.linuxc_db.get('select * from Imagen where idImagen=%s', imagen_id)[0]['categoria']
-                icon = ''
-                if categoria_imagen == 'seguridad': # TODO cambiar por Seguridad
-                    icon = 'firewall'
-                elif categoria_imagen == 'Networking':
-                    icon = 'router'
-                elif categoria_imagen == 'Server':
-                    icon = 'server'
                 # se añade
                 vm_parsed.append({
                     "id": vm["idVM"],
                     "name": vm["nombre"],
-                    "icon": icon,
+                    "icon": categoria_imagen,
                 })
 
                 # parsear las enlaces
@@ -440,6 +495,7 @@ class Driver():
                         "source": int(vm_id),
                         "srcDevice": vm["nombre"],
                         "srcIfName": interfaz['nombre'],
+                        "mac": interfaz['mac'],
 
                         "target": target_id,
                         "tgtDevice": tgt_device,
@@ -478,7 +534,6 @@ class Driver():
             "nodes": vm_parsed,
             "links": enlaces_parsed
         }
-        print(topologia_json_visualizador)
         return topologia_json_visualizador
 
     def workers_info(self) -> dict:

@@ -24,7 +24,7 @@ class DB:
 
             ejemplo de uso
             ---
-            obtener_db("select * from EnlaceBridges where TopologiaBridges_name=%s", nombre)
+            get("select * from EnlaceBridges where TopologiaBridges_name=%s", nombre)
         '''
         # conexion a la base de datos
         connection = pymysql.connect(host=self.host,
@@ -54,7 +54,7 @@ class DB:
 
             ejemplo de uso
             --- 
-            save_to_db("INSERT INTO VM (name, imageName, vncPort) VALUES (%s,%s,%s)", (vm.name, vm.image_name, vm.vnc_port))
+            save("INSERT INTO VM (name, imageName, vncPort) VALUES (%s,%s,%s)", (vm.name, vm.image_name, vm.vnc_port))
         '''
         # conexion a la base de datos
         connection = pymysql.connect(host=self.host,
