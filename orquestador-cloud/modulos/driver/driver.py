@@ -9,6 +9,8 @@ import random
 
 from .ssh import SSH
 from .db import DB
+from .openstackapi import OpenstackApi
+from ..logging.Logging import Logging
 
 from ..config.crendentials import config_controller_lc
 from ..config.crendentials import config_db_linuxcluster
@@ -19,12 +21,10 @@ from ..config.crendentials import config_w3_lc
 from ..config.crendentials import config_openstack
 from ..config.crendentials import config_db_openstack
 
-import openstack
-openstack.enable_logging(debug=True, path='./modulos/logging/orquestador.log')
-
-
 class Driver():
     def __init__(self) -> None:
+        self.logging = Logging()
+        
         # Arquitectura#1 : Linux Cluster
         self.linuxc_db = DB(config_db_linuxcluster['host'],
                             config_db_linuxcluster['username'],
@@ -52,13 +52,15 @@ class Driver():
                                      config_w3_lc['passphrase'])
         self.linuxc_ofs = None
         # Arquitectura#2 : OpenStack
-        self.openstacksdk = openstack.connect(
-                                auth_url=config_openstack['auth_url'],
-                                project_name=config_openstack['project_name'],
-                                username=config_openstack['username'],
-                                password=config_openstack['password'],
-                                user_domain_name=config_openstack['user_domain_name'],
-                                project_domain_name=config_openstack['project_domain_name'])
+        self.openstackapi = OpenstackApi(   config_openstack['OS_USERNAME'], 
+                                            config_openstack['OS_PASSWORD'], 
+                                            config_openstack['OS_USER_DOMAIN_NAME'], 
+                                            config_openstack['OS_PROJECT_DOMAIN_NAME'], 
+                                            config_openstack['OS_PROJECT_NAME'], 
+                                            config_openstack['OS_AUTH_URL'], 
+                                            config_openstack['COMPUTE_URL'], 
+                                            config_openstack['NETWORK_URL'], 
+                                            config_openstack['GLANCE_URL'])
         self.openstack_db = DB(config_db_openstack['host'],
                             config_db_openstack['username'],
                             config_db_openstack['password'],
@@ -264,7 +266,7 @@ class Driver():
 
     # Funciones en desarrollo
 
-    def crear_topologia(self, nueva_topologia) -> dict:
+    def crear_topologia(self, nueva_topologia, debug=False) -> dict:
         if (nueva_topologia['infraestructura']['infraestructura'] == "Linux Cluster"):
             last_topologyid = self.linuxc_db.get('select max(idTopologia) from Topologia')[0]['max(idTopologia)']
             topology_id = str(last_topologyid+1)
@@ -282,11 +284,18 @@ class Driver():
                 dhcp_range = "192.168."+vlan_id+".10,192.168."+vlan_id+".254,255.255.255.0"
 
                 try:
-                    self.linuxc_controller.ejecutar_script_local('./modulos/driver/bash_scripts/create_network.sh', [nombre, vlan_id, red, gateway, dhcp_ip, dhcp_range, gateway_w_netmask])
-                    self.linuxc_db.save("INSERT INTO Topologia (idTopologia, nombre, tipo) VALUES (%s,%s,%s)", (topology_id, nueva_topologia['nombre'], 'lineal'))
-                    self.linuxc_db.save("insert into Vlan (idVlan, gateway, dhcpServer, network, Topologia_idTopologia) VALUES (%s, %s, %s, %s, %s)", (int(vlan_id), gateway_w_netmask, dhcp_ip, red, int(topology_id) ))
+                    if debug: print('create_network.sh [%s, %s, %s, %s, %s, %s, %s]' % (nombre+str(vlan_id), vlan_id, red, gateway, dhcp_ip, dhcp_range, gateway_w_netmask))
+                    self.linuxc_controller.ejecutar_script_local('./modulos/driver/bash_scripts/create_network.sh', [nombre+str(vlan_id), vlan_id, red, gateway, dhcp_ip, dhcp_range, gateway_w_netmask])
+
+                    if debug: print("INSERT INTO Topologia (idTopologia, nombre, tipo) VALUES (%s,%s,%s)" % (str(topology_id), nueva_topologia['nombre'], 'lineal'))
+                    self.linuxc_db.save("INSERT INTO Topologia (idTopologia, nombre, tipo) VALUES (%s,%s,%s)", (str(topology_id), nueva_topologia['nombre'], 'lineal'))
+
+                    if debug: print("INSERT INTO Vlan (idVlan, gateway, dhcpServer, network, Topologia_idTopologia) VALUES (%s, %s, %s, %s, %s)" % (int(vlan_id), gateway_w_netmask, dhcp_ip, red, int(topology_id) ))
+                    self.linuxc_db.save("INSERT INTO Vlan (idVlan, gateway, dhcpServer, network, Topologia_idTopologia) VALUES (%s, %s, %s, %s, %s)", (int(vlan_id), gateway_w_netmask, dhcp_ip, red, int(topology_id) ))
+
                     for worker_id in nueva_topologia['infraestructura']['az']:
                             self.linuxc_db.save("INSERT INTO Topologia_has_Worker (Topologia_idTopologia, Worker_idWorker) VALUES (%s,%s)", (topology_id, worker_id))
+                            if debug: print("INSERT INTO Topologia_has_Worker (Topologia_idTopologia, Worker_idWorker) VALUES (%s,%s)" % (topology_id, worker_id))
                     # 2. Despliegue de VMs
                     # se obtiene los ID de los workers dentro de la AZ
                     az = nueva_topologia['infraestructura']['az']
@@ -302,31 +311,44 @@ class Driver():
                         vnc_port = id_interfaz + 5900
                         id_vm = int(self.linuxc_db.get('select max(idVM) from VM')[0]['max(idVM)']) + 1
                         mac = "02:00:00:%02x:%02x:%02x" % (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+
                         if worker_asignado['hostname'] == 'worker1':
                             ruta_imagen = '/home/w1/imagenes/'+imagen['categoria']+'/'+imagen['nombre']
-                            self.linuxc_worker1.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', [vm['nombre'], str(vlan_id), str(vnc_port), ruta_imagen, mac])
+                            ruta_fs = '/home/w1/filesystem/n'+str(id_vm)+'.qcow2'
+                            if debug: print('worker1 create_vm.sh (%s, %s, %s, %s, %s, %s)' % ("n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs))
+                            self.linuxc_worker1.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac])
                             print('[+] vm desplegada en worker 1')
                         elif worker_asignado['hostname'] == 'worker2':
                             ruta_imagen = '/home/w2/imagenes/'+imagen['categoria']+'/'+imagen['nombre']
-                            self.linuxc_worker2.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', [vm['nombre'], str(vlan_id), str(vnc_port), ruta_imagen, mac])
+                            ruta_fs = '/home/w2/filesystem/n'+str(id_vm)+'.qcow2'
+                            vm_identifier = "n"+str(id_vm)
+                            if debug: print('worker2 create_vm.sh (%s, %s, %s, %s, %s, %s)' % (vm_identifier, str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs))
+                            self.linuxc_worker2.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac])
                             print('[+] vm desplegada en worker 2')
                         elif worker_asignado['hostname'] == 'worker3':
                             ruta_imagen = '/home/wk3/imagenes/'+imagen['categoria']+'/'+imagen['nombre']
-                            self.linuxc_worker3.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', [vm['nombre'], str(vlan_id), str(vnc_port), ruta_imagen, mac])
+                            ruta_fs = '/home/wk3/filesystem/n'+str(id_vm)+'.qcow2'
+                            if debug: print('worker3 create_vm.sh (%s, %s, %s, %s, %s, %s)' % ("n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs))
+                            self.linuxc_worker3.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac])
                             print('[+] vm desplegada en worker 3')
                         # 4. guardar info en DB
                         internet = 1 if vm['internet']==True else 0
                         self.linuxc_db.save("insert into VM (idVM, nombre, Topologia_idTopologia, Imagen_idImagen, Worker_idWorker, vCPU, memoria, tipoFilesystem, tamaño) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)", (str(id_vm), vm['nombre'], str(topology_id), str(vm['imagen_id']), str(worker_asignado['idWorker']), str(vm['n_vcpus']), str(vm['memoria']), vm['filesystem']['filesystem'], str(vm['filesystem']['size'])))
+                        if debug: print("insert into VM (idVM, nombre, Topologia_idTopologia, Imagen_idImagen, Worker_idWorker, vCPU, memoria, tipoFilesystem, tamaño) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)" % (str(id_vm), vm['nombre'], str(topology_id), str(vm['imagen_id']), str(worker_asignado['idWorker']), str(vm['n_vcpus']), str(vm['memoria']), vm['filesystem']['filesystem'], str(vm['filesystem']['size'])))
+
                         self.linuxc_db.save("insert into Interfaz (idInterfaz, nombre, mac, VM_idVM, Vlan_idVlan, internet, target) VALUES (%s, %s, %s, %s, %s, %s, %s)", (str(id_interfaz), 'link_1', mac, str(id_vm), str(vlan_id), str(internet), str(-1) ))
+                        if debug: print(("insert into Interfaz (idInterfaz, nombre, mac, VM_idVM, Vlan_idVlan, internet, target) VALUES (%s, %s, %s, %s, %s, %s, %s)" % (str(id_interfaz), 'link_1', mac, str(id_vm), str(vlan_id), str(internet), str(-1) )))
+
                         # se restan recursos en workers
                         cpu_restante = int(worker_asignado['vcpuLibres']) - int(vm['n_vcpus'])
                         memoria_restante = int(worker_asignado['memoriaLibre']) - int(vm['memoria'])
                         disco_restante = int(worker_asignado['discoLibre']) - int(vm['filesystem']['size'])
                         self.linuxc_db.save("UPDATE Worker SET vcpuLibres=%s, memoriaLibre=%s, discoLibre=%s where idWorker=%s", (cpu_restante, memoria_restante, disco_restante, worker_asignado['idWorker']))
+                        if debug: print("UPDATE Worker SET vcpuLibres=%s, memoriaLibre=%s, discoLibre=%s where idWorker=%s" % (cpu_restante, memoria_restante, disco_restante, worker_asignado['idWorker']))
                 except Exception as e:
                     return {
                         'valor': 3,
-                        'mensaje': 'ERROR en la creacion de la red para topologia lineal | '+str(e)
+                        'mensaje': 'ERROR en la creacion de la red para topologia lineal | '+str(e).replace('\n', ' \\n ')
                     }
             else:
                 # TODO otro tipo de topologia
@@ -334,7 +356,7 @@ class Driver():
         elif (nueva_topologia['infraestructura']['infraestructura'] == "OpenStack"):
             pass
 
-        print('[+] Se creó correctamente')
+        print('\n[+] Se creó correctamente')
         return {
             'valor': 6,
             'mensaje': 'Topologia creada correctamente: '+str(nueva_topologia)
@@ -363,7 +385,7 @@ class Driver():
             print('\n[+] Imagen importada correctamente')
             return {
                     'valor': 6,
-                    'mensaje': 'Imagen importada correctamente'
+                    'mensaje': 'Imagen importada correctamente | INSERT INTO Imagen (idImagen, nombre, categoria, fechaUltimoUso) VALUES (%s, %s,%s,%s)' % (image_id, data['nombre'], data['categoria'], str(datetime.today().strftime('%Y-%m-%d')))
                 }
         except Exception as e:
             print(e)

@@ -15,7 +15,13 @@ class Logging():
             log_level = 'INFO'
             
         message = result['mensaje']
-        agent = 'linuxcluster'
+
+        if result['agent']:
+            agent = result['agent']
+        else:
+            agent = 'linuxcluster'
+
+        
         with open("./modulos/logging/orquestador.log", "a") as file_object:
             # Ejemplo de output: 
             # 2022-06-14 16:43:56,238 DEBUG: keystoneauth.session REQ: curl -g -i -X GET http://controller:5000/v3 -H "Accept: application/json" -H "User-Agent: openstacksdk/0.99.0 keystoneauth1/4.6.0 python-requests/2.22.0 CPython/3.8.10"

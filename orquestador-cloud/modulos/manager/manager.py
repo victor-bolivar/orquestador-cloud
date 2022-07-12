@@ -15,6 +15,54 @@ class Manager:
         self.validador = Validador()
         self.logging = Logging()
 
+        data = {
+                    "nombre": "aac",
+                    "tipo": "lineal",
+                    "infraestructura": {
+                        "infraestructura": "Linux Cluster",
+                        "az": [
+                            "1",
+                            "2"
+                        ]
+                    },
+                    "vms": [
+                        {
+                            "nombre": 'vm1',
+                            "n_vcpus": 1,
+                            "memoria": 1,
+                            "filesystem": {
+                                "filesystem": "CopyOnWrite",
+                                "size": 10
+                            },
+                            "imagen_id": 17,
+                            "internet": True
+                        },
+                        {
+                            "nombre": 'vm2',
+                            "n_vcpus": 1,
+                            "memoria": 1,
+                            "filesystem": {
+                                "filesystem": "CopyOnWrite",
+                                "size": 10
+                            },
+                            "imagen_id": 17,
+                            "internet": True
+                        },
+                        {
+                            "nombre": 'vm3',
+                            "n_vcpus": 1,
+                            "memoria": 1,
+                            "filesystem": {
+                                "filesystem": "CopyOnWrite",
+                                "size": 10
+                            },
+                            "imagen_id": 17,
+                            "internet": False
+                        }
+                    ]
+                }
+        #print(self.driver.crear_topologia(data, debug=True))
+
     # Opciones del menu principal
 
     # Opcion 1

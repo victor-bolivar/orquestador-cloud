@@ -47,12 +47,15 @@ config_ofs_lc = {
 
 ## Openstack
 config_openstack = {
-    'auth_url':'http://10.20.12.247:5000/v3',
-    'project_name':'tel141',
-    'username':'tel141',
-    'password':'gabo',
-    'user_domain_name':'Default',
-    'project_domain_name':'Default'
+    'OS_AUTH_URL':'http://10.20.12.247:5000/v3',
+    'COMPUTE_URL': "http://10.20.12.247:8774/v2.1",
+    'NETWORK_URL': "http://10.20.12.247:9696",
+    'GLANCE_URL': 'http://10.20.12.247:9292',
+    'OS_PROJECT_NAME':'tel141',
+    'OS_USERNAME':'tel141',
+    'OS_PASSWORD':'gabo',
+    'OS_USER_DOMAIN_NAME':'Default',
+    'OS_PROJECT_DOMAIN_NAME':'Default'
 }
 config_db_openstack = {
     'username': 'proyecto',

@@ -3,27 +3,27 @@
 var topologyData = {
     "links": [
         {
-            "mac": "02:00:00:8c:82:53",
-            "source": 8,
-            "srcDevice": "vm1",
+            "mac": "02:00:00:cc:42:3f",
+            "source": 38,
+            "srcDevice": "v1",
             "srcIfName": "link_1",
             "target": -1,
             "tgtDevice": "Bus",
             "tgtIfName": ""
         },
         {
-            "mac": "02:00:00:2a:d1:40",
-            "source": 9,
-            "srcDevice": "vm2",
+            "mac": "02:00:00:de:98:37",
+            "source": 39,
+            "srcDevice": "v2",
             "srcIfName": "link_1",
             "target": -1,
             "tgtDevice": "Bus",
             "tgtIfName": ""
         },
         {
-            "mac": "02:00:00:40:59:68",
-            "source": 10,
-            "srcDevice": "vm3",
+            "mac": "02:00:00:53:42:56",
+            "source": 40,
+            "srcDevice": "v3",
             "srcIfName": "link_1",
             "target": -1,
             "tgtDevice": "Bus",
@@ -33,18 +33,18 @@ var topologyData = {
     "nodes": [
         {
             "icon": "server",
-            "id": 8,
-            "name": "vm1"
+            "id": 38,
+            "name": "v1"
         },
         {
             "icon": "server",
-            "id": 9,
-            "name": "vm2"
+            "id": 39,
+            "name": "v2"
         },
         {
             "icon": "server",
-            "id": 10,
-            "name": "vm3"
+            "id": 40,
+            "name": "v3"
         },
         {
             "icon": "cloud",

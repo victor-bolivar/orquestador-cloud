@@ -54,7 +54,8 @@ class SSH:
 
         # imprimir stdout / stderr
         if stdout.channel.recv_exit_status() == 0:
-            print(stderr.read().decode())
+            if stderr.read().decode():
+                print(stderr.read().decode())
             return stdout
         else:
             raise Exception('error en la ejecucion de script | '+str(stderr.read().decode()))

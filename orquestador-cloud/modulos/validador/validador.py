@@ -132,7 +132,7 @@ class Validador():
         vms = []
         for i in range(1, 4):
             print('            ------ Maquina virtual #'+str(i)+' ------\n')
-            nombre = input("Ingrese un nombre: ")
+            nombre_vm = input("Ingrese un nombre: ")
             print()
             n_vcpus = self.obtener_numero_vcpus()
             memoria = self.obtener_memoria()
@@ -141,7 +141,7 @@ class Validador():
             internet = self.conectar_internet()
             print()
             vms.append({
-                'nombre': nombre,
+                'nombre': nombre_vm,
                 'n_vcpus': n_vcpus,
                 'memoria': memoria,
                 'filesystem': filesystem,
