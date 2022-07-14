@@ -112,7 +112,7 @@ class Manager:
         #print(self.driver.crear_topologia(data_lc, debug=True))
         data_nodo = {
                     'id_topologia': "54",
-                    "nombre": 'vm1',
+                    "nombre": 'vm',
                     "n_vcpus": 1,
                     "memoria": 1,
                     "filesystem": {
@@ -122,7 +122,8 @@ class Manager:
                     "imagen_id": 19,
                     "internet": True
                 }
-        print(self.driver.recursos_suficientes_nodo(data_nodo))
+        #print(self.driver.recursos_suficientes_nodo(data_nodo))
+        print(self.driver.agregar_nodo(data_nodo, debug=True))
 
     # Opciones del menu principal
 

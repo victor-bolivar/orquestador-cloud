@@ -71,3 +71,24 @@ config_controller_openstack = {
     'private_key': './modulos/config/id_ecdsa',
     'passphrase': 'victor.bolivar@pucp.edu.pe'
 }
+config_w1_openstack = {
+    'host': '10.20.12.247',
+    'port':2201,
+    'username': 'worker',
+    'private_key': './modulos/config/id_ecdsa',
+    'passphrase': 'victor.bolivar@pucp.edu.pe'
+}
+config_w2_openstack = {
+    'host': '10.20.12.247',
+    'port':2202,
+    'username': 'worker',
+    'private_key': './modulos/config/id_ecdsa',
+    'passphrase': 'victor.bolivar@pucp.edu.pe'
+}
+config_w3_openstack = {
+    'host': '10.20.12.247',
+    'port':2203,
+    'username': 'worker',
+    'private_key': './modulos/config/id_ecdsa',
+    'passphrase': 'victor.bolivar@pucp.edu.pe'
+}

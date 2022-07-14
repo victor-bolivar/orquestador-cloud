@@ -22,6 +22,10 @@ from ..config.crendentials import config_w3_lc
 from ..config.crendentials import config_openstack
 from ..config.crendentials import config_db_openstack
 from ..config.crendentials import config_controller_openstack
+from ..config.crendentials import config_w1_openstack
+from ..config.crendentials import config_w2_openstack
+from ..config.crendentials import config_w3_openstack
+
 
 class Driver():
     def __init__(self) -> None:
@@ -68,6 +72,21 @@ class Driver():
                                      config_controller_openstack['username'],
                                      config_controller_openstack['private_key'],
                                      config_controller_openstack['passphrase'])
+        self.openstack_worker1 = SSH(config_w1_openstack['host'],
+                                     config_w1_openstack['port'],
+                                     config_w1_openstack['username'],
+                                     config_w1_openstack['private_key'],
+                                     config_w1_openstack['passphrase'])
+        self.openstack_worker2 = SSH(config_w2_openstack['host'],
+                                     config_w2_openstack['port'],
+                                     config_w2_openstack['username'],
+                                     config_w2_openstack['private_key'],
+                                     config_w2_openstack['passphrase'])
+        self.openstack_worker3 = SSH(config_w3_openstack['host'],
+                                     config_w3_openstack['port'],
+                                     config_w3_openstack['username'],
+                                     config_w3_openstack['private_key'],
+                                     config_w3_openstack['passphrase'])
         self.openstack_db = DB(config_db_openstack['host'],
                             config_db_openstack['username'],
                             config_db_openstack['password'],
@@ -236,6 +255,81 @@ class Driver():
                             break
         return recursos_suficientes
 
+    def recursos_suficientes_nodo(self, nuevo_nodo) -> bool:
+        '''
+            Dada la informacion ingresada por el usuario, se verifica que existan los recursos suficientes 
+            haciendo la consulta a la DB de la infraestructura correspondiente.
+
+            De ser asi, se procederia a separar los recursos y se retorna un 'True'. 
+            Sino, se retorna un 'False' indicando que no existen los recursos suficientes.
+
+            inputs
+            ---
+                nuevo_nodo (dict): diccionario que almacena la informacion del nodo a separar.
+            
+            outputs
+            ---
+                recursos_suficientes (bool): booleano que indica si existen los recursos sufientes.
+                result (dict): resultado de la operacion con el fin de loggear las operaciones realizadas
+            
+        '''
+        '''
+            Dada la informacion ingresada por el usuario, se verifica que existan los recursos suficientes 
+            haciendo la consulta a la DB de la infraestructura correspondiente.
+
+            De ser asi, se se retorna un 'True'. 
+            Sino, se retorna un 'False' indicando que no existen los recursos suficientes.
+
+            inputs
+            ---
+                nuevo_nodo (dict): diccionario que almacena la informacion de la topologia a separar.
+
+                    {
+                        'id_topologia': "1",
+                        "nombre": 'vm1',
+                        "n_vcpus": 1,
+                        "memoria": 1,
+                        "filesystem": {
+                            "filesystem": "CopyOnWrite",
+                            "size": 1
+                        },
+                        "imagen_id": 19,
+                        "internet": True
+                    }
+            
+            outputs
+            ---
+                recursos_suficientes (bool): booleano que indica si existen los recursos sufientes.
+            
+        '''
+        recursos_suficientes = None
+
+        # se define que conexion a db se va a usar
+        if (int(nuevo_nodo['id_topologia']) < 1000):
+            db = self.linuxc_db
+        elif (int(nuevo_nodo['id_topologia']) < 2000):
+            db = self.openstack_db
+
+        # con el ID se obtiene el az
+        az = db.get("select Worker_idWorker from Topologia_has_Worker where Topologia_idTopologia=%s", nuevo_nodo['id_topologia'])
+        az = [ str(a['Worker_idWorker']) for a in az]
+
+        workers_db = db.obtener_workers()
+        # se obtiene una lista con la informacion de los workers dentro del AZ (workers_validos)
+        workers_validos = [] 
+        for worker in workers_db:
+            if (str(worker['idWorker']) in az):
+                workers_validos.append(worker)
+        # se itera sobre cada vm para verificar si hay recursos suficientes
+        for worker in workers_validos:
+            if ( (int(worker['vcpuLibres'])>=nuevo_nodo['n_vcpus']) and (int(worker['memoriaLibre'])>=nuevo_nodo['memoria']) and (int(worker['discoLibre'])>=nuevo_nodo['filesystem']['size'])):
+                recursos_suficientes = True
+                break
+            else:
+                recursos_suficientes = False
+
+        return recursos_suficientes
+
     def listar_topologias(self) -> None:
         # obtener data de la db
         linuxc_db = self.linuxc_db.obtener_topologias()
@@ -318,7 +412,206 @@ class Driver():
         t = t.replace("\n", "\n                ")
         return t
 
+    def workers_info(self) -> dict:
+        '''
+            output
+            ---
+            workers_info:   se devuelve un diccionario con la informacion de los workers dentro de cada infraestructura
+                            con el fin de que el usuario defina su AZ en el modulo validador
+
+                            {
+                                'openstack': tabla_openstack,
+                                'linux_cluster': tabla_lc,
+                            }
+
+        '''
+
+        # 1. tabla_openstack
+        tabla_openstack = PrettyTable()
+        tabla_openstack.field_names = ["ID", "Nombre", "Porcentaje de uso de CPU", "cantidad disponible de vCPU",
+                                       "cantidad de memoria libre", "cantidad de disco libre"]
+
+        workers_db = self.openstack_db.get('select * from Worker')
+        for worker in workers_db:
+            # se obtiene el CPU avg
+            if worker['hostname'] == 'worker1':
+                list_cpu_usage = self.openstack_worker1.list_cpu_usage('/home/worker/worker1_cpu_metrics')
+                cpu_avg = self.cpu_exponential_weigted_average(list_cpu_usage)  # exponential weigted average
+            elif worker['hostname'] == 'worker2':
+                # Worker 2
+                list_cpu_usage = self.openstack_worker2.list_cpu_usage('/home/worker/worker2_cpu_metrics')
+                cpu_avg = self.cpu_exponential_weigted_average(list_cpu_usage)  # exponential weigted average
+            elif worker['hostname'] == 'worker3':
+                # Worker 3
+                list_cpu_usage = self.openstack_worker3.list_cpu_usage('/home/worker/worker3_cpu_metrics')
+                cpu_avg = self.cpu_exponential_weigted_average(list_cpu_usage)  # exponential weigted average
+            # se llena los datos 
+            cpu_avg = round(cpu_avg*100, 2) # se limita a 2 decimales
+            cpu_avg = str(cpu_avg)+'%'
+            tabla_openstack.add_row([worker['idWorker'], worker['hostname'], cpu_avg, worker['vcpuLibres'],worker['memoriaLibre'],worker['discoLibre'],])
+        
+        tabla_openstack = str(tabla_openstack)
+        tabla_openstack = '                '+tabla_openstack
+        tabla_openstack = tabla_openstack.replace("\n", "\n                ")
+        # 2. tabla_lc
+        tabla_lc = PrettyTable()
+        tabla_lc.field_names = ["ID", "Nombre", "Porcentaje de uso de CPU", "cantidad disponible de vCPU",
+                                "cantidad de memoria libre", "cantidad de disco libre"]
+
+        workers_db = self.linuxc_db.get('select * from Worker')
+        for worker in workers_db:
+            # se obtiene el CPU avg
+            if worker['hostname'] == 'worker1':
+                list_cpu_usage = self.linuxc_worker1.list_cpu_usage('/home/w1/worker1_cpu_metrics')
+                cpu_avg = self.cpu_exponential_weigted_average(list_cpu_usage)  # exponential weigted average
+            elif worker['hostname'] == 'worker2':
+                # Worker 2
+                list_cpu_usage = self.linuxc_worker2.list_cpu_usage('/home/w2/worker2_cpu_metrics')
+                cpu_avg = self.cpu_exponential_weigted_average(list_cpu_usage)  # exponential weigted average
+            elif worker['hostname'] == 'worker3':
+                # Worker 3
+                list_cpu_usage = self.linuxc_worker3.list_cpu_usage('/home/wk3/worker3_cpu_metrics')
+                cpu_avg = self.cpu_exponential_weigted_average(list_cpu_usage)  # exponential weigted average
+            # se llena los datos 
+            cpu_avg = round(cpu_avg*100, 2) # se limita a 2 decimales
+            cpu_avg = str(cpu_avg)+'%'
+            tabla_lc.add_row([worker['idWorker'], worker['hostname'], cpu_avg, worker['vcpuLibres'],worker['memoriaLibre'],worker['discoLibre'],])
+
+        tabla_lc = str(tabla_lc)
+        tabla_lc = '                '+tabla_lc
+        tabla_lc = tabla_lc.replace("\n", "\n                ")
+
+        return {
+            'openstack': tabla_openstack,
+            'linux_cluster': tabla_lc
+        }
+
+    def listar_nodos(self, id_topologia) -> None:
+
+        if id_topologia<1000:
+            db = self.linuxc_db
+        elif id_topologia<2000:
+            db = self.openstack_db
+
+        t = PrettyTable()
+        t.field_names = ["ID",  "Nombre", "vCPU", "Memoria (GB)", 'Filesystem', 'Disco (GB)']
+
+        nodos = db.get(' select * from VM where Topologia_idTopologia=%s', id_topologia)
+        for nodo in nodos:
+            t.add_row([nodo['idVM'], nodo['nombre'], nodo['vCPU'], nodo['memoria'], nodo['tipoFilesystem'], nodo['tamaño']])
+
+        t = '\n' + str(t)
+        t = t.replace("\n", "\n                ")
+        print(t)
+
     # Funciones en desarrollo
+
+    def agregar_nodo(self, nodo, debug=False) -> dict:
+        '''
+
+            nodo(dict):
+
+                {
+                    'id_topologia': "54",
+                    "nombre": 'vm1',
+                    "n_vcpus": 1,
+                    "memoria": 1,
+                    "filesystem": {
+                        "filesystem": "CopyOnWrite",
+                        "size": 1
+                    },
+                    "imagen_id": 19,
+                    "internet": True
+                }
+        '''
+
+        topology_id = int(nodo['id_topologia'])
+        if topology_id < 1000:
+            # Linux Cluster
+            tipo_topologia = self.linuxc_db.get('select * from Topologia where idTopologia=%s;', topology_id)[0]['tipo']
+            if debug: print('Tipo de topologia: '+tipo_topologia)
+
+            if tipo_topologia == 'lineal':
+            
+                # se obtiene los ID de los workers dentro de la AZ
+                az = self.linuxc_db.get("select Worker_idWorker from Topologia_has_Worker where Topologia_idTopologia=%s", topology_id)
+                az = [ str(a['Worker_idWorker']) for a in az] # ['1', '2']
+
+                # 1. filter
+                workers = self.filter(nodo, az)
+                  
+                # 2. obtener worker asignado
+                worker_asignado = self.scheduler(workers)
+                    
+                # 3. desplegar vm
+
+                # 3.1 se obtiene informacion base
+                vlan_id = self.linuxc_db.get('select * from Vlan where Topologia_idTopologia=%s', topology_id)[0]['idVlan']
+                imagen = self.linuxc_db.get("select * from Imagen where idImagen=%s", nodo['imagen_id'])[0]
+                id_interfaz = (int(self.linuxc_db.get('select max(idInterfaz) from Interfaz')[0]['max(idInterfaz)']) + 1 ) if self.linuxc_db.get('select max(idInterfaz) from Interfaz')[0]['max(idInterfaz)'] else 1 # para el puerto VNC se toma el id de la ultima interfaz creada (como es topologia lineal solo hay una interfaz por VM) y se le suma 5900 (que es el puerto a partir del cual se deifine las conexiones vnc) y se le suma 1 para obtener el puerto VNC de la nueva VM
+                vnc_port = id_interfaz + 5900
+                id_vm = (int(self.linuxc_db.get('select max(idVM) from VM')[0]['max(idVM)']) + 1) if self.linuxc_db.get('select max(idVM) from VM')[0]['max(idVM)'] else 1
+                mac = "02:00:00:%02x:%02x:%02x" % (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+
+                # 3.2 se ejecuta script de acuerdo a donde se va desplegar
+                if worker_asignado['hostname'] == 'worker1':
+                    # acceso por VNC
+                    self.linuxc_controller.ejecutar_comando('sudo iptables -t nat -A PREROUTING -p tcp --dport %s -j DNAT --to-destination 10.0.0.10:%s' % (vnc_port, vnc_port))
+                    print('[+] Acceso por consola en puerto %s del controller %s' % (vnc_port, config_db_linuxcluster['host']))
+
+                    ruta_imagen = '/home/w1/imagenes/'+imagen['categoria']+'/'+imagen['nombre']
+                    ruta_fs = '/home/w1/filesystems/n'+str(id_vm)+'.qcow2'
+                    if debug: print('worker1 create_vm.sh (%s, %s, %s, %s, %s, %s)' % ("n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs))
+                    self.linuxc_worker1.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs])
+                    print('[+] vm desplegada en worker 1')
+
+                elif worker_asignado['hostname'] == 'worker2':
+                    # acceso por VNC
+                    self.linuxc_controller.ejecutar_comando('sudo iptables -t nat -A PREROUTING -p tcp --dport %s -j DNAT --to-destination 10.0.0.20:%s' % (vnc_port, vnc_port))
+                    print('[+] Acceso por consola en puerto %s del controller %s' % (vnc_port, config_db_linuxcluster['host']))
+
+                    ruta_imagen = '/home/w2/imagenes/'+imagen['categoria']+'/'+imagen['nombre']
+                    ruta_fs = '/home/w2/filesystems/n'+str(id_vm)+'.qcow2'
+                    vm_identifier = "n"+str(id_vm)
+                    if debug: print('worker2 create_vm.sh (%s, %s, %s, %s, %s, %s)' % (vm_identifier, str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs))
+                    self.linuxc_worker2.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs])
+                    print('[+] vm desplegada en worker 2')  
+
+                elif worker_asignado['hostname'] == 'worker3':
+                    # acceso por VNC
+                    self.linuxc_controller.ejecutar_comando('sudo iptables -t nat -A PREROUTING -p tcp --dport %s -j DNAT --to-destination 10.0.0.30:%s' % (vnc_port, vnc_port))
+                    print('[+] Acceso por consola en puerto %s del controller %s' % (vnc_port, config_db_linuxcluster['host']))
+
+                    ruta_imagen = '/home/wk3/imagenes/'+imagen['categoria']+'/'+imagen['nombre']
+                    ruta_fs = '/home/wk3/filesystems/n'+str(id_vm)+'.qcow2'
+                    if debug: print('worker3 create_vm.sh (%s, %s, %s, %s, %s, %s)' % ("n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs))
+                    self.linuxc_worker3.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs])
+                    print('[+] vm desplegada en worker 3')
+
+                # 4. guardar info en DB
+                internet = 1 if nodo['internet']==True else 0
+                self.linuxc_db.save("insert into VM (idVM, nombre, Topologia_idTopologia, Imagen_idImagen, Worker_idWorker, vCPU, memoria, tipoFilesystem, tamaño) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)", (str(id_vm), nodo['nombre'], str(topology_id), str(nodo['imagen_id']), str(worker_asignado['idWorker']), str(nodo['n_vcpus']), str(nodo['memoria']), nodo['filesystem']['filesystem'], str(nodo['filesystem']['size'])))
+                if debug: print("insert into VM (idVM, nombre, Topologia_idTopologia, Imagen_idImagen, Worker_idWorker, vCPU, memoria, tipoFilesystem, tamaño) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)" % (str(id_vm), nodo['nombre'], str(topology_id), str(nodo['imagen_id']), str(worker_asignado['idWorker']), str(nodo['n_vcpus']), str(nodo['memoria']), nodo['filesystem']['filesystem'], str(nodo['filesystem']['size'])))
+                self.linuxc_db.save("insert into Interfaz (idInterfaz, nombre, mac, VM_idVM, Vlan_idVlan, internet, target) VALUES (%s, %s, %s, %s, %s, %s, %s)", (str(id_interfaz), 'link_1', mac, str(id_vm), str(vlan_id), str(internet), str(-1) ))
+                if debug: print(("insert into Interfaz (idInterfaz, nombre, mac, VM_idVM, Vlan_idVlan, internet, target) VALUES (%s, %s, %s, %s, %s, %s, %s)" % (str(id_interfaz), 'link_1', mac, str(id_vm), str(vlan_id), str(internet), str(-1) )))
+
+                # 5. se restan recursos en workers
+                cpu_restante = int(worker_asignado['vcpuLibres']) - int(nodo['n_vcpus'])
+                memoria_restante = int(worker_asignado['memoriaLibre']) - int(nodo['memoria'])
+                disco_restante = int(worker_asignado['discoLibre']) - int(nodo['filesystem']['size'])
+                self.linuxc_db.save("UPDATE Worker SET vcpuLibres=%s, memoriaLibre=%s, discoLibre=%s where idWorker=%s", (cpu_restante, memoria_restante, disco_restante, worker_asignado['idWorker']))
+                if debug: print("UPDATE Worker SET vcpuLibres=%s, memoriaLibre=%s, discoLibre=%s where idWorker=%s" % (cpu_restante, memoria_restante, disco_restante, worker_asignado['idWorker']))
+
+        elif topology_id < 2000:
+            # Openstack
+            pass
+
+        print('[+] Se agregó correctamente')
+        result = {
+            'valor': 6,
+            'mensaje': 'Maquina virtual creada satisfactoriamente | '+str(nodo)
+        }
+        return result
 
     def crear_topologia(self, nueva_topologia, debug=False) -> dict:
         if (nueva_topologia['infraestructura']['infraestructura'] == "Linux Cluster"):
@@ -377,9 +670,9 @@ class Driver():
                         print('[+] Acceso por consola en puerto %s del controller %s' % (vnc_port, config_db_linuxcluster['host']))
 
                         ruta_imagen = '/home/w1/imagenes/'+imagen['categoria']+'/'+imagen['nombre']
-                        ruta_fs = '/home/w1/filesystem/n'+str(id_vm)+'.qcow2'
+                        ruta_fs = '/home/w1/filesystems/n'+str(id_vm)+'.qcow2'
                         if debug: print('worker1 create_vm.sh (%s, %s, %s, %s, %s, %s)' % ("n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs))
-                        self.linuxc_worker1.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac])
+                        self.linuxc_worker1.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs])
                         print('[+] vm desplegada en worker 1')
 
                         
@@ -390,10 +683,10 @@ class Driver():
                         print('[+] Acceso por consola en puerto %s del controller %s' % (vnc_port, config_db_linuxcluster['host']))
 
                         ruta_imagen = '/home/w2/imagenes/'+imagen['categoria']+'/'+imagen['nombre']
-                        ruta_fs = '/home/w2/filesystem/n'+str(id_vm)+'.qcow2'
+                        ruta_fs = '/home/w2/filesystems/n'+str(id_vm)+'.qcow2'
                         vm_identifier = "n"+str(id_vm)
                         if debug: print('worker2 create_vm.sh (%s, %s, %s, %s, %s, %s)' % (vm_identifier, str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs))
-                        self.linuxc_worker2.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac])
+                        self.linuxc_worker2.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs])
                         print('[+] vm desplegada en worker 2')
 
                         
@@ -404,9 +697,9 @@ class Driver():
                         print('[+] Acceso por consola en puerto %s del controller %s' % (vnc_port, config_db_linuxcluster['host']))
 
                         ruta_imagen = '/home/wk3/imagenes/'+imagen['categoria']+'/'+imagen['nombre']
-                        ruta_fs = '/home/wk3/filesystem/n'+str(id_vm)+'.qcow2'
+                        ruta_fs = '/home/wk3/filesystems/n'+str(id_vm)+'.qcow2'
                         if debug: print('worker3 create_vm.sh (%s, %s, %s, %s, %s, %s)' % ("n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs))
-                        self.linuxc_worker3.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac])
+                        self.linuxc_worker3.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs])
                         print('[+] vm desplegada en worker 3')
 
                         
@@ -528,7 +821,6 @@ class Driver():
             'valor': 6,
             'mensaje': 'Topologia creada correctamente: '+str(nueva_topologia)
         }
-
   
     def topologia_json(self, topology_id) -> None:
         if topology_id < 1000:
@@ -694,125 +986,84 @@ class Driver():
         }
         return topologia_json_visualizador
 
-    def workers_info(self) -> dict:
-        '''
-            output
-            ---
-            workers_info:   se devuelve un diccionario con la informacion de los workers dentro de cada infraestructura
-                            con el fin de que el usuario defina su AZ en el modulo validador
+    def eliminar_nodo(self, topology_id, id_vm, debug=False) -> dict:
 
-                            {
-                                'openstack': tabla_openstack,
-                                'linux_cluster': tabla_lc,
-                            }
+        if topology_id < 1000:
+            # Linux Cluster
+            tipo_topologia = self.linuxc_db.get('select * from Topologia where idTopologia=%s;', topology_id)[0]['tipo']
+            if debug: print('Tipo de topologia: '+tipo_topologia)
 
-        '''
-        # 1. tabla_openstack
-        tabla_openstack = PrettyTable()
-        tabla_openstack.field_names = ["ID", "Nombre", "Porcentaje de uso de CPU", "cantidad disponible de vCPU",
-                                       "cantidad de memoria libre", "cantidad de disco libre"]
-        tabla_openstack.add_row(
-            ["1001", "Worker1", "30 %", 16, "3 GB", "20 GB"])
-        tabla_openstack.add_row(
-            ["1002", "Worker2", " 50 %", 10, "2 GB", "15 GB"])
-        tabla_openstack.add_row(
-            ["1003", "Worker3", " 60 %", 12, "2 GB", "10 GB"])
-        tabla_openstack = str(tabla_openstack)
-        tabla_openstack = '                '+tabla_openstack
-        tabla_openstack = tabla_openstack.replace("\n", "\n                ")
-        # 2. tabla_lc
-        tabla_lc = PrettyTable()
-        tabla_lc.field_names = ["ID", "Nombre", "Porcentaje de uso de CPU", "cantidad disponible de vCPU",
-                                "cantidad de memoria libre", "cantidad de disco libre"]
-        tabla_lc.add_row(["1", "Worker1", "30 %", 16, "3 GB", "20 GB"])
-        tabla_lc.add_row(["2", "Worker2", " 50 %", 10, "2 GB", "15 GB"])
-        tabla_lc.add_row(["3", "Worker3", " 60 %", 12, "2 GB", "10 GB"])
-        tabla_lc = str(tabla_lc)
-        tabla_lc = '                '+tabla_lc
-        tabla_lc = tabla_lc.replace("\n", "\n                ")
+            if tipo_topologia == 'lineal':
 
-        return {
-            'openstack': tabla_openstack,
-            'linux_cluster': tabla_lc
+                vlan_id = self.linuxc_db.get('select * from Vlan where Topologia_idTopologia=%s', topology_id)[0]['idVlan']
+
+                # imagen que esta usando la vm
+                id_imagen = self.linuxc_db.get('select Imagen_idImagen from VM where idVM=%s', id_vm)[0]['Imagen_idImagen']
+                imagen = self.linuxc_db.get("select * from Imagen where idImagen=%s", id_imagen)[0]
+                if debug: print('Imagen: '+str(imagen))
+
+                # interfaz usada por la VM
+                id_interfaz = self.linuxc_db.get('select IdInterfaz from Interfaz where VM_idVM=%s', id_vm)[0]['IdInterfaz']
+                if debug: print('id_interfaz: '+str(id_interfaz))
+                vnc_port = int(id_interfaz) + 5900
+
+                # en que worker esta
+                id_worker = int(self.linuxc_db.get('select Worker_idWorker from VM where idVM=%s', id_vm)[0]['Worker_idWorker'])
+
+                if id_worker == 1:
+                    # acceso por VNC
+                    self.linuxc_controller.ejecutar_comando('sudo iptables -t nat -D PREROUTING -p tcp --dport %s -j DNAT --to-destination 10.0.0.10:%s' % (vnc_port, vnc_port))
+                    print('\n[+] Acceso por consola REMOVIDO en puerto %s del controller %s' % (vnc_port, config_db_linuxcluster['host']))
+
+                    ruta_imagen = '/home/w1/imagenes/'+imagen['categoria']+'/'+imagen['nombre']
+                    ruta_fs = '/home/w1/filesystems/n'+str(id_vm)+'.qcow2'
+                    if debug: print('worker1 delete_vm.sh (%s, %s, %s, %s, %s, %s)' % ("n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, "-", ruta_fs))
+                    self.linuxc_worker1.ejecutar_script_local('./modulos/driver/bash_scripts/delete_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, "-", ruta_fs])
+                    print('[+] vm eliminada en worker 1')
+
+                elif id_worker == 2:
+                    # acceso por VNC
+                    self.linuxc_controller.ejecutar_comando('sudo iptables -t nat -D PREROUTING -p tcp --dport %s -j DNAT --to-destination 10.0.0.20:%s' % (vnc_port, vnc_port))
+                    print('\n[+] Acceso por consola REMOVIDO en puerto %s del controller %s' % (vnc_port, config_db_linuxcluster['host']))
+
+                    ruta_imagen = '/home/w2/imagenes/'+imagen['categoria']+'/'+imagen['nombre']
+                    ruta_fs = '/home/w2/filesystems/n'+str(id_vm)+'.qcow2'
+                    if debug: print('worker2 delete_vm.sh (%s, %s, %s, %s, %s, %s)' % ("n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, "-", ruta_fs))
+                    self.linuxc_worker2.ejecutar_script_local('./modulos/driver/bash_scripts/delete_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, "-", ruta_fs])
+                    print('[+] vm eliminada en worker 2')
+
+                elif id_worker == 3:
+                    # acceso por VNC
+                    self.linuxc_controller.ejecutar_comando('sudo iptables -t nat -D PREROUTING -p tcp --dport %s -j DNAT --to-destination 10.0.0.30:%s' % (vnc_port, vnc_port))
+                    print('\n[+] Acceso por consola REMOVIDO en puerto %s del controller %s' % (vnc_port, config_db_linuxcluster['host']))
+
+                    ruta_imagen = '/home/wk3/imagenes/'+imagen['categoria']+'/'+imagen['nombre']
+                    ruta_fs = '/home/wk3/filesystems/n'+str(id_vm)+'.qcow2'
+                    if debug: print('worker3 delete_vm.sh (%s, %s, %s, %s, %s, %s)' % ("n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, "-", ruta_fs))
+                    self.linuxc_worker3.ejecutar_script_local('./modulos/driver/bash_scripts/delete_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, "-", ruta_fs])
+                    print('[+] vm eliminada en worker 3')
+               
+               # TODO actualizar DB
+
+                
+
+
+
+
+        elif topology_id < 2000:
+            # OpenStack
+            pass
+
+        print('[-] Se eliminó correctamente')
+        result = {
+            'valor': 6,
+            'mensaje': 'Maquina virtual eliminada satisfactoriamente'
         }
+        return result
 
     # Funciones pendientes
     
-    def recursos_suficientes_nodo(self, nuevo_nodo) -> bool:
-        '''
-            Dada la informacion ingresada por el usuario, se verifica que existan los recursos suficientes 
-            haciendo la consulta a la DB de la infraestructura correspondiente.
-
-            De ser asi, se procederia a separar los recursos y se retorna un 'True'. 
-            Sino, se retorna un 'False' indicando que no existen los recursos suficientes.
-
-            inputs
-            ---
-                nuevo_nodo (dict): diccionario que almacena la informacion del nodo a separar.
-            
-            outputs
-            ---
-                recursos_suficientes (bool): booleano que indica si existen los recursos sufientes.
-                result (dict): resultado de la operacion con el fin de loggear las operaciones realizadas
-            
-        '''
-        '''
-            Dada la informacion ingresada por el usuario, se verifica que existan los recursos suficientes 
-            haciendo la consulta a la DB de la infraestructura correspondiente.
-
-            De ser asi, se se retorna un 'True'. 
-            Sino, se retorna un 'False' indicando que no existen los recursos suficientes.
-
-            inputs
-            ---
-                nuevo_nodo (dict): diccionario que almacena la informacion de la topologia a separar.
-
-                    {
-                        'id_topologia': "1",
-                        "nombre": 'vm1',
-                        "n_vcpus": 1,
-                        "memoria": 1,
-                        "filesystem": {
-                            "filesystem": "CopyOnWrite",
-                            "size": 1
-                        },
-                        "imagen_id": 19,
-                        "internet": True
-                    }
-            
-            outputs
-            ---
-                recursos_suficientes (bool): booleano que indica si existen los recursos sufientes.
-            
-        '''
-        recursos_suficientes = None
-
-        # se define que conexion a db se va a usar
-        if (int(nuevo_nodo['id_topologia']) < 1000):
-            db = self.linuxc_db
-        elif (int(nuevo_nodo['id_topologia']) < 2000):
-            db = self.openstack_db
-
-        # con el ID se obtiene el az
-        az = db.get("select Worker_idWorker from Topologia_has_Worker where Topologia_idTopologia=%s", nuevo_nodo['id_topologia'])
-        az = [ str(a['Worker_idWorker']) for a in az]
-
-        workers_db = db.obtener_workers()
-        # se obtiene una lista con la informacion de los workers dentro del AZ (workers_validos)
-        workers_validos = [] 
-        for worker in workers_db:
-            if (str(worker['idWorker']) in az):
-                workers_validos.append(worker)
-        # se itera sobre cada vm para verificar si hay recursos suficientes
-        for worker in workers_validos:
-            if ( (int(worker['vcpuLibres'])>=nuevo_nodo['n_vcpus']) and (int(worker['memoriaLibre'])>=nuevo_nodo['memoria']) and (int(worker['discoLibre'])>=nuevo_nodo['filesystem']['size'])):
-                recursos_suficientes = True
-                break
-            else:
-                recursos_suficientes = False
-
-        return recursos_suficientes
-
+    
     def listar_workers_actuales(self, id_topologia) -> None:
         print('Actualmente su topologia cuenta con: '+str(['worker1', 'worker2']))
         print()
@@ -834,33 +1085,6 @@ class Driver():
     def crear_vm(self, data) -> dict:
         print('[+] VM creada correctamente')
         result = None  # codigo sislog
-        return result
-
-    def agregar_nodo(self, data) -> dict:
-        print('[+] Se agregó correctamente')
-        result = {
-            'valor': 6,
-            'mensaje': 'Maquina virtual creada satisfactoriamente'
-        }
-        return result
-
-    def listar_nodos(self, id_topologia) -> None:
-        t = PrettyTable()
-        t.field_names = ["ID",  "Nombre"]
-        t.add_row(["1", "Nodo 1"])
-        t.add_row(["2", "Nodo 2"])
-        t.add_row(["3", "Nodo 3"])
-        t.add_row(["4", "Nodo 4"])
-        t = '\n' + str(t)
-        t = t.replace("\n", "\n                ")
-        print(t)
-
-    def eliminar_nodo(self, id_topologia, id_nodo) -> dict:
-        print('\n[-] Se eliminó correctamente')
-        result = {
-            'valor': 6,
-            'mensaje': 'Maquina virtual eliminada satisfactoriamente'
-        }
         return result
 
     def aumentar_slice(self, data) -> dict:
