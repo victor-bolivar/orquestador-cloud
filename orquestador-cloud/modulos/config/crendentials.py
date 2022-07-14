@@ -51,8 +51,8 @@ config_openstack = {
     'COMPUTE_URL': "http://10.20.12.247:8774/v2.1",
     'NETWORK_URL': "http://10.20.12.247:9696",
     'GLANCE_URL': 'http://10.20.12.247:9292',
-    'OS_PROJECT_NAME':'tel141',
-    'OS_USERNAME':'tel141',
+    'OS_PROJECT_NAME':'admin',
+    'OS_USERNAME':'admin',
     'OS_PASSWORD':'gabo',
     'OS_USER_DOMAIN_NAME':'Default',
     'OS_PROJECT_DOMAIN_NAME':'Default'
@@ -62,4 +62,12 @@ config_db_openstack = {
     'password': 'proyecto',
     'host':     '10.20.12.247',  
     'database': 'proyecto'
+}
+# ssh
+config_controller_openstack = {
+    'host': '10.20.12.247',
+    'port':22,
+    'username': 'proyecto',
+    'private_key': './modulos/config/id_ecdsa',
+    'passphrase': 'victor.bolivar@pucp.edu.pe'
 }

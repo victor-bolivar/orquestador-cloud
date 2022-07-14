@@ -31,3 +31,11 @@ if sudo qemu-system-x86_64 -enable-kvm -vnc 0.0.0.0:$port_option \
         -daemonize $ruta_fs -cpu host; then
     echo [+] Maquina virtual desplegada SATISFACTORIAMENTE en puerto $vnc_port de $(hostname) vlan:$vlan_id
 fi
+
+# sudo qemu-img create -f qcow2 -o backing_file=$image $ruta_fs 
+# sudo qemu-system-x86_64 -enable-kvm -vnc 0.0.0.0:$port_option,password=on -monitor stdio \
+#         -netdev tap,id=$tap_name,ifname=$tap_name,script=no,downscript=no \
+#         -device e1000,netdev=$tap_name,mac=$mac
+# change vnc password 
+# password
+

@@ -421,6 +421,7 @@ class Validador():
         internet = self.conectar_internet()
         return {
             'id_topologia': id_topologia,
+            "nombre": nombre,
             'n_vcpus': n_vcpus,
             'memoria': memoria,
             'filesystem': filesystem,

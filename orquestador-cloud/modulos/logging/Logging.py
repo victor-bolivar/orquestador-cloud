@@ -16,10 +16,10 @@ class Logging():
             
         message = result['mensaje']
 
-        if result['agent']:
+        if 'agent' in result:
             agent = result['agent']
         else:
-            agent = 'linuxcluster'
+            agent = 'system'
 
         
         with open("./modulos/logging/orquestador.log", "a") as file_object:

@@ -21,6 +21,8 @@ class OpenstackApi():
 
         self.TOKEN = None
         self.obtener_token()
+
+    # Funciones validadas
     
     def obtener_token(self):
         headers =  {'Content-Type' : 'application/json'}
@@ -54,6 +56,29 @@ class OpenstackApi():
         response = requests.post(url, headers=headers, data=json.dumps(data))
         self.TOKEN = response.headers['X-Subject-Token']
         self.logging.log({ 'valor': 6, 'agent':'openstackapi', 'mensaje': 'Se obtuvo SATISFACTORIAMENTE el token '+self.TOKEN})
+
+    # Funciones en desarrollo
+
+    def crear_vm(self, nombre, flavor_id, image_id, red_id):
+        headers =  { 'Content-Type' : 'application/json',
+                     'X-Auth-Token': self.TOKEN} 
+        url = self.COMPUTE_URL+'/servers'
+        data = {
+            "server" : {
+                "name" : nombre,
+                "flavorRef": flavor_id,
+                "imageRef": image_id,
+                "networks" : [{
+                        "uuid" : red_id
+                            }]
+
+            }
+        }
+        response = requests.post(url, headers=headers, data=json.dumps(data))
+        return response.json()
+        # TODO log
+
+    # Funciones por validar
 
     def crear_keypair(self, nombre, public_key) -> None:
         headers =  { 'Content-Type' : 'application/json',
@@ -170,30 +195,6 @@ class OpenstackApi():
         url = self.NETWORK_URL+'/v2.0/subnets/'+subnet_id
         return requests.get(url, headers=headers).json()['subnet']
     
-    def crear_vm(self, nombre, flavor_id, image_id, red_id, keypair, sg_id):
-        headers =  { 'Content-Type' : 'application/json',
-                     'X-Auth-Token': self.TOKEN} 
-        url = self.COMPUTE_URL+'/servers'
-        data = {
-            "server" : {
-                "name" : nombre,
-                "flavorRef": flavor_id,
-                "imageRef": image_id,
-                "networks" : [{
-                        "uuid" : red_id
-                            }],
-                "key_name": keypair,
-                "security_groups": [
-                    {
-                        "name": sg_id
-                    }
-                ]
-
-            }
-        }
-        response = requests.post(url, headers=headers, data=json.dumps(data))
-        print(response.json())
-    
     def listar_vm(self):
         headers =  { 'Content-Type' : 'application/json',
                      'X-Auth-Token': self.TOKEN} 
@@ -217,6 +218,7 @@ class OpenstackApi():
                      'X-Auth-Token': self.TOKEN} 
         url = self.GLANCE_URL+"/v2/images/"+image_id
         return requests.get(url, headers=headers).json()
+
 
 def menu():
     global openstackApi

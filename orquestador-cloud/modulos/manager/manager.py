@@ -15,14 +15,61 @@ class Manager:
         self.validador = Validador()
         self.logging = Logging()
 
-        data = {
-                    "nombre": "aac",
+        data_lc = {
+            "nombre": "prueba1",
+            "tipo": "lineal",
+            "infraestructura": {
+                "infraestructura": "Linux Cluster",
+                "az": [
+                    "1",
+                    "2"
+                ]
+            },
+            "vms": [
+                {
+                    "nombre": 'vm1',
+                    "n_vcpus": 1,
+                    "memoria": 1,
+                    "filesystem": {
+                        "filesystem": "CopyOnWrite",
+                        "size": 1
+                    },
+                    "imagen_id": 19,
+                    "internet": True
+                },
+                {
+                    "nombre": 'vm2',
+                    "n_vcpus": 1,
+                    "memoria": 1,
+                    "filesystem": {
+                        "filesystem": "CopyOnWrite",
+                        "size": 1
+                    },
+                    "imagen_id": 19,
+                    "internet": True
+                },
+                {
+                    "nombre": 'vm3',
+                    "n_vcpus": 1,
+                    "memoria": 1,
+                    "filesystem": {
+                        "filesystem": "CopyOnWrite",
+                        "size": 1
+                    },
+                    "imagen_id": 19,
+                    "internet": False
+                }
+            ]
+        }
+
+        data_op = {
+                    "nombre": "aaa",
                     "tipo": "lineal",
                     "infraestructura": {
-                        "infraestructura": "Linux Cluster",
+                        "infraestructura": "OpenStack",
                         "az": [
-                            "1",
-                            "2"
+                            "1001",
+                            "1002"
                         ]
                     },
                     "vms": [
@@ -34,7 +81,7 @@ class Manager:
                                 "filesystem": "CopyOnWrite",
                                 "size": 10
                             },
-                            "imagen_id": 17,
+                            "imagen_id": 19,
                             "internet": True
                         },
                         {
@@ -45,7 +92,7 @@ class Manager:
                                 "filesystem": "CopyOnWrite",
                                 "size": 10
                             },
-                            "imagen_id": 17,
+                            "imagen_id": 19,
                             "internet": True
                         },
                         {
@@ -56,12 +103,26 @@ class Manager:
                                 "filesystem": "CopyOnWrite",
                                 "size": 10
                             },
-                            "imagen_id": 17,
+                            "imagen_id": 19,
                             "internet": False
                         }
                     ]
                 }
-        #print(self.driver.crear_topologia(data, debug=True))
+        #print(self.driver.recursos_suficientes_topologia(data))
+        #print(self.driver.crear_topologia(data_lc, debug=True))
+        data_nodo = {
+                    'id_topologia': "54",
+                    "nombre": 'vm1',
+                    "n_vcpus": 1,
+                    "memoria": 1,
+                    "filesystem": {
+                        "filesystem": "CopyOnWrite",
+                        "size": 1
+                    },
+                    "imagen_id": 19,
+                    "internet": True
+                }
+        print(self.driver.recursos_suficientes_nodo(data_nodo))
 
     # Opciones del menu principal
 
@@ -220,11 +281,10 @@ class Manager:
                 if (opcion == 1):
 
                     # 3. se verifica que existen los recursos suficientes y se separan los recursos en la DB
-                    [recursos_suficientes, result] = self.driver.separar_recursos_nodo(data)
-                    self.logging.log(result)
+                    recursos_suficientes = self.driver.recursos_suficientes_nodo(data)
                     
                     if recursos_suficientes:
-                        # 4. ya que ya se separaron los recursos en la db, se procede a crear el nodo
+                        # 4. ya que ya se valida que hay los recursos en la db, se procede a crear el nodo
                         result = self.driver.agregar_nodo(data)
                         self.logging.log(result)
                     else:

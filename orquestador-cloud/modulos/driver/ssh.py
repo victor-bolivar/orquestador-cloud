@@ -32,7 +32,6 @@ class SSH:
         client.connect(hostname=self.host, port=self.puerto, username=self.username, key_filename=self.private_key, passphrase=self.passphrase)
         # execute
         stdin, stdout, stderr = client.exec_command(comando)
-        print(stdout.read().decode())
         if stdout.channel.recv_exit_status() == 0:
             return stdout
         else:
@@ -52,13 +51,15 @@ class SSH:
         stdin.write(mymodule)
         stdin.close()
 
+        # return stdout
         # imprimir stdout / stderr
         if stdout.channel.recv_exit_status() == 0:
             if stderr.read().decode():
                 print(stderr.read().decode())
+            
             return stdout
         else:
-            raise Exception('error en la ejecucion de script | '+str(stderr.read().decode()))
+            raise Exception('ERROR en la ejecucion de script | '+str(stderr.read().decode()))
 
     def leer_csv(self, remote_file):
         client = paramiko.SSHClient()
