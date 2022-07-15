@@ -3,8 +3,8 @@
 var topologyData = {
     "links": [
         {
-            "mac": "02:00:00:8f:f2:a8",
-            "source": 54,
+            "mac": "02:00:00:84:dc:ab",
+            "source": 75,
             "srcDevice": "vm1",
             "srcIfName": "link_1",
             "target": -1,
@@ -12,8 +12,8 @@ var topologyData = {
             "tgtIfName": ""
         },
         {
-            "mac": "02:00:00:5e:2c:c0",
-            "source": 55,
+            "mac": "02:00:00:6a:d4:e7",
+            "source": 76,
             "srcDevice": "vm2",
             "srcIfName": "link_1",
             "target": -1,
@@ -21,8 +21,8 @@ var topologyData = {
             "tgtIfName": ""
         },
         {
-            "mac": "02:00:00:10:58:7a",
-            "source": 56,
+            "mac": "02:00:00:d3:c4:4a",
+            "source": 77,
             "srcDevice": "vm3",
             "srcIfName": "link_1",
             "target": -1,
@@ -30,18 +30,9 @@ var topologyData = {
             "tgtIfName": ""
         },
         {
-            "mac": "02:00:00:d3:9c:78",
-            "source": 58,
-            "srcDevice": "vm1",
-            "srcIfName": "link_1",
-            "target": -1,
-            "tgtDevice": "Bus",
-            "tgtIfName": ""
-        },
-        {
-            "mac": "02:00:00:a3:19:3b",
-            "source": 59,
-            "srcDevice": "5",
+            "mac": "02:00:00:0c:02:b1",
+            "source": 78,
+            "srcDevice": "vmz",
             "srcIfName": "link_1",
             "target": -1,
             "tgtDevice": "Bus",
@@ -51,33 +42,23 @@ var topologyData = {
     "nodes": [
         {
             "icon": "server",
-            "id": 54,
+            "id": 75,
             "name": "vm1"
         },
         {
             "icon": "server",
-            "id": 55,
+            "id": 76,
             "name": "vm2"
         },
         {
             "icon": "server",
-            "id": 56,
+            "id": 77,
             "name": "vm3"
         },
         {
             "icon": "server",
-            "id": 57,
-            "name": "vm1"
-        },
-        {
-            "icon": "server",
-            "id": 58,
-            "name": "vm1"
-        },
-        {
-            "icon": "server",
-            "id": 59,
-            "name": "5"
+            "id": 78,
+            "name": "vmz"
         },
         {
             "icon": "cloud",

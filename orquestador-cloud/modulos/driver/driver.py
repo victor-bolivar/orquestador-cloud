@@ -555,38 +555,38 @@ class Driver():
 
                 # 3.2 se ejecuta script de acuerdo a donde se va desplegar
                 if worker_asignado['hostname'] == 'worker1':
-                    # acceso por VNC
-                    self.linuxc_controller.ejecutar_comando('sudo iptables -t nat -A PREROUTING -p tcp --dport %s -j DNAT --to-destination 10.0.0.10:%s' % (vnc_port, vnc_port))
-                    print('[+] Acceso por consola en puerto %s del controller %s' % (vnc_port, config_db_linuxcluster['host']))
 
                     ruta_imagen = '/home/w1/imagenes/'+imagen['categoria']+'/'+imagen['nombre']
                     ruta_fs = '/home/w1/filesystems/n'+str(id_vm)+'.qcow2'
                     if debug: print('worker1 create_vm.sh (%s, %s, %s, %s, %s, %s)' % ("n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs))
                     self.linuxc_worker1.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs])
-                    print('[+] vm desplegada en worker 1')
+
+                    print('''[+] Maquina virtual desplegara en Worker 1, 
+    Acceda a su maquina estableciendo un tunel SSH para luego conectarse por VNC en localhost
+    Ejemplo: ssh -L  %s:127.0.0.1:%s acceso_vnc@10.20.12.161 -p 2201''' % (vnc_port, vnc_port))
 
                 elif worker_asignado['hostname'] == 'worker2':
-                    # acceso por VNC
-                    self.linuxc_controller.ejecutar_comando('sudo iptables -t nat -A PREROUTING -p tcp --dport %s -j DNAT --to-destination 10.0.0.20:%s' % (vnc_port, vnc_port))
-                    print('[+] Acceso por consola en puerto %s del controller %s' % (vnc_port, config_db_linuxcluster['host']))
 
                     ruta_imagen = '/home/w2/imagenes/'+imagen['categoria']+'/'+imagen['nombre']
                     ruta_fs = '/home/w2/filesystems/n'+str(id_vm)+'.qcow2'
                     vm_identifier = "n"+str(id_vm)
                     if debug: print('worker2 create_vm.sh (%s, %s, %s, %s, %s, %s)' % (vm_identifier, str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs))
                     self.linuxc_worker2.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs])
-                    print('[+] vm desplegada en worker 2')  
+
+                    print('''[+] Maquina virtual desplegara en Worker 2, 
+    Acceda a su maquina estableciendo un tunel SSH para luego conectarse por VNC en localhost
+    Ejemplo: ssh -L  %s:127.0.0.1:%s acceso_vnc@10.20.12.161 -p 2202''' % (vnc_port, vnc_port))
 
                 elif worker_asignado['hostname'] == 'worker3':
-                    # acceso por VNC
-                    self.linuxc_controller.ejecutar_comando('sudo iptables -t nat -A PREROUTING -p tcp --dport %s -j DNAT --to-destination 10.0.0.30:%s' % (vnc_port, vnc_port))
-                    print('[+] Acceso por consola en puerto %s del controller %s' % (vnc_port, config_db_linuxcluster['host']))
 
                     ruta_imagen = '/home/wk3/imagenes/'+imagen['categoria']+'/'+imagen['nombre']
                     ruta_fs = '/home/wk3/filesystems/n'+str(id_vm)+'.qcow2'
                     if debug: print('worker3 create_vm.sh (%s, %s, %s, %s, %s, %s)' % ("n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs))
                     self.linuxc_worker3.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs])
-                    print('[+] vm desplegada en worker 3')
+
+                    print('''[+] Maquina virtual desplegara en Worker 3, 
+    Acceda a su maquina estableciendo un tunel SSH para luego conectarse por VNC en localhost
+    Ejemplo: ssh -L  %s:127.0.0.1:%s acceso_vnc@10.20.12.161 -p 2203''' % (vnc_port, vnc_port))
 
                 # 4. guardar info en DB
                 internet = 1 if nodo['internet']==True else 0
@@ -649,6 +649,7 @@ class Driver():
                 az = nueva_topologia['infraestructura']['az']
                 # se analiza para cada VM
                 for vm in nueva_topologia['vms']:
+
                     # 1. filter
                     workers = self.filter(vm, az)
                   
@@ -665,45 +666,39 @@ class Driver():
 
                     # 3.2 se ejecuta script de acuerdo a donde se va desplegar
                     if worker_asignado['hostname'] == 'worker1':
-                        # acceso por VNC
-                        self.linuxc_controller.ejecutar_comando('sudo iptables -t nat -A PREROUTING -p tcp --dport %s -j DNAT --to-destination 10.0.0.10:%s' % (vnc_port, vnc_port))
-                        print('[+] Acceso por consola en puerto %s del controller %s' % (vnc_port, config_db_linuxcluster['host']))
-
+                        
                         ruta_imagen = '/home/w1/imagenes/'+imagen['categoria']+'/'+imagen['nombre']
                         ruta_fs = '/home/w1/filesystems/n'+str(id_vm)+'.qcow2'
                         if debug: print('worker1 create_vm.sh (%s, %s, %s, %s, %s, %s)' % ("n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs))
                         self.linuxc_worker1.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs])
-                        print('[+] vm desplegada en worker 1')
+                        print('''[+] Maquina virtual desplegara en Worker 1, 
+    Acceda a su maquina estableciendo un tunel SSH para luego conectarse por VNC en localhost
+    Ejemplo: ssh -L  %s:127.0.0.1:%s acceso_vnc@10.20.12.161 -p 2201''' % (vnc_port, vnc_port))
 
-                        
+                        #print('[+] Acceso por consola en puerto %s del controller %s' % (vnc_port, config_db_linuxcluster['host']))
 
                     elif worker_asignado['hostname'] == 'worker2':
-                        # acceso por VNC
-                        self.linuxc_controller.ejecutar_comando('sudo iptables -t nat -A PREROUTING -p tcp --dport %s -j DNAT --to-destination 10.0.0.20:%s' % (vnc_port, vnc_port))
-                        print('[+] Acceso por consola en puerto %s del controller %s' % (vnc_port, config_db_linuxcluster['host']))
 
                         ruta_imagen = '/home/w2/imagenes/'+imagen['categoria']+'/'+imagen['nombre']
                         ruta_fs = '/home/w2/filesystems/n'+str(id_vm)+'.qcow2'
                         vm_identifier = "n"+str(id_vm)
                         if debug: print('worker2 create_vm.sh (%s, %s, %s, %s, %s, %s)' % (vm_identifier, str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs))
                         self.linuxc_worker2.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs])
-                        print('[+] vm desplegada en worker 2')
-
-                        
+                        print('''[+] Maquina virtual desplegara en Worker 2, 
+    Acceda a su maquina estableciendo un tunel SSH al Worker para luego conectarse por VNC en localhost      
+    Ejemplo: ssh -L  %s:127.0.0.1:%s acceso_vnc@10.20.12.161 -p 2202''' % (vnc_port, vnc_port))
 
                     elif worker_asignado['hostname'] == 'worker3':
-                        # acceso por VNC
-                        self.linuxc_controller.ejecutar_comando('sudo iptables -t nat -A PREROUTING -p tcp --dport %s -j DNAT --to-destination 10.0.0.30:%s' % (vnc_port, vnc_port))
-                        print('[+] Acceso por consola en puerto %s del controller %s' % (vnc_port, config_db_linuxcluster['host']))
 
                         ruta_imagen = '/home/wk3/imagenes/'+imagen['categoria']+'/'+imagen['nombre']
                         ruta_fs = '/home/wk3/filesystems/n'+str(id_vm)+'.qcow2'
                         if debug: print('worker3 create_vm.sh (%s, %s, %s, %s, %s, %s)' % ("n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs))
                         self.linuxc_worker3.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs])
-                        print('[+] vm desplegada en worker 3')
+                        print('''[+] Maquina virtual desplegara en Worker 3, 
+    Acceda a su maquina estableciendo un tunel SSH para luego conectarse por VNC en localhost                     
+    Ejemplo: ssh -L  %s:127.0.0.1:%s acceso_vnc@10.20.12.161 -p 2202''' % (vnc_port, vnc_port))
 
                         
-
                     # 4. guardar info en DB
                     internet = 1 if vm['internet']==True else 0
                     self.linuxc_db.save("insert into VM (idVM, nombre, Topologia_idTopologia, Imagen_idImagen, Worker_idWorker, vCPU, memoria, tipoFilesystem, tamaño) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)", (str(id_vm), vm['nombre'], str(topology_id), str(vm['imagen_id']), str(worker_asignado['idWorker']), str(vm['n_vcpus']), str(vm['memoria']), vm['filesystem']['filesystem'], str(vm['filesystem']['size'])))
@@ -1011,9 +1006,6 @@ class Driver():
                 id_worker = int(self.linuxc_db.get('select Worker_idWorker from VM where idVM=%s', id_vm)[0]['Worker_idWorker'])
 
                 if id_worker == 1:
-                    # acceso por VNC
-                    self.linuxc_controller.ejecutar_comando('sudo iptables -t nat -D PREROUTING -p tcp --dport %s -j DNAT --to-destination 10.0.0.10:%s' % (vnc_port, vnc_port))
-                    print('\n[+] Acceso por consola REMOVIDO en puerto %s del controller %s' % (vnc_port, config_db_linuxcluster['host']))
 
                     ruta_imagen = '/home/w1/imagenes/'+imagen['categoria']+'/'+imagen['nombre']
                     ruta_fs = '/home/w1/filesystems/n'+str(id_vm)+'.qcow2'
@@ -1022,9 +1014,6 @@ class Driver():
                     print('[+] vm eliminada en worker 1')
 
                 elif id_worker == 2:
-                    # acceso por VNC
-                    self.linuxc_controller.ejecutar_comando('sudo iptables -t nat -D PREROUTING -p tcp --dport %s -j DNAT --to-destination 10.0.0.20:%s' % (vnc_port, vnc_port))
-                    print('\n[+] Acceso por consola REMOVIDO en puerto %s del controller %s' % (vnc_port, config_db_linuxcluster['host']))
 
                     ruta_imagen = '/home/w2/imagenes/'+imagen['categoria']+'/'+imagen['nombre']
                     ruta_fs = '/home/w2/filesystems/n'+str(id_vm)+'.qcow2'
@@ -1033,10 +1022,7 @@ class Driver():
                     print('[+] vm eliminada en worker 2')
 
                 elif id_worker == 3:
-                    # acceso por VNC
-                    self.linuxc_controller.ejecutar_comando('sudo iptables -t nat -D PREROUTING -p tcp --dport %s -j DNAT --to-destination 10.0.0.30:%s' % (vnc_port, vnc_port))
-                    print('\n[+] Acceso por consola REMOVIDO en puerto %s del controller %s' % (vnc_port, config_db_linuxcluster['host']))
-
+                    
                     ruta_imagen = '/home/wk3/imagenes/'+imagen['categoria']+'/'+imagen['nombre']
                     ruta_fs = '/home/wk3/filesystems/n'+str(id_vm)+'.qcow2'
                     if debug: print('worker3 delete_vm.sh (%s, %s, %s, %s, %s, %s)' % ("n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, "-", ruta_fs))

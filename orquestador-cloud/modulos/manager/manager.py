@@ -109,9 +109,9 @@ class Manager:
                     ]
                 }
         #print(self.driver.recursos_suficientes_topologia(data))
-        print(self.driver.crear_topologia(data_lc, debug=True))
+        #print(self.driver.crear_topologia(data_lc, debug=False))
         data_nodo = {
-                    'id_topologia': "54",
+                    'id_topologia': "59",
                     "nombre": 'vmz',
                     "n_vcpus": 1,
                     "memoria": 1,
@@ -123,7 +123,7 @@ class Manager:
                     "internet": True
                 }
         #print(self.driver.recursos_suficientes_nodo(data_nodo))
-        #print(self.driver.agregar_nodo(data_nodo, debug=True))
+        print(self.driver.agregar_nodo(data_nodo, debug=True))
 
     # Opciones del menu principal
 
