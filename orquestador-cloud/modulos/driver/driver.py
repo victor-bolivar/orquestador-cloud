@@ -1117,7 +1117,6 @@ class Driver():
 
     # Funciones pendientes
     
-    
     def listar_workers_actuales(self, id_topologia) -> None:
         print('Actualmente su topologia cuenta con: '+str(['worker1', 'worker2']))
         print()
@@ -1129,7 +1128,6 @@ class Driver():
         '''
         return self.workers_info()['openstack']
 
-    
 
     def crear_vm(self, data) -> dict:
         print('[+] VM creada correctamente')
