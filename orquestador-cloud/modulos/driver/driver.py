@@ -1042,13 +1042,22 @@ class Driver():
                     if debug: print('worker3 delete_vm.sh (%s, %s, %s, %s, %s, %s)' % ("n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, "-", ruta_fs))
                     self.linuxc_worker3.ejecutar_script_local('./modulos/driver/bash_scripts/delete_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, "-", ruta_fs])
                     print('[+] vm eliminada en worker 3')
-               
-               # TODO actualizar DB
 
-                
+                # se restan recursos en workers
+                worker_asignado = self.linuxc_db.get('select * from Worker where idWorker=%s', id_worker)[0]
+                nodo = self.linuxc_db.get('select * from VM where idVM=%s', id_vm)[0]
 
+                cpu_restante = int(worker_asignado['vcpuLibres']) + int(nodo['vCPU'])
+                memoria_restante = int(worker_asignado['memoriaLibre']) + int(nodo['memoria'])
+                disco_restante = int(worker_asignado['discoLibre']) + int(nodo['tamaño'])
+                self.linuxc_db.save("UPDATE Worker SET vcpuLibres=%s, memoriaLibre=%s, discoLibre=%s where idWorker=%s", (cpu_restante, memoria_restante, disco_restante, worker_asignado['idWorker']))
+                if debug: print("UPDATE Worker SET vcpuLibres=%s, memoriaLibre=%s, discoLibre=%s where idWorker=%s" % (cpu_restante, memoria_restante, disco_restante, worker_asignado['idWorker']))
 
-
+                # guardar info en DB
+                self.linuxc_db.save("delete from Interfaz where idInterfaz=%s", (id_interfaz))
+                if debug: print("delete from Interfaz where idInterfaz=%s", (id_interfaz))
+                self.linuxc_db.save("delete from VM where idVM=%s", (id_vm))
+                if debug: print("delete from VM where idVM=%s", (id_vm))
 
         elif topology_id < 2000:
             # OpenStack
@@ -1057,9 +1066,54 @@ class Driver():
         print('[-] Se eliminó correctamente')
         result = {
             'valor': 6,
-            'mensaje': 'Maquina virtual eliminada satisfactoriamente'
+            'mensaje': 'Maquina virtual eliminada satisfactoriamente | '+str(nodo)
         }
         return result
+
+    def eliminar_topologia(self, topology_id, debug=False) -> dict:
+
+        if topology_id < 1000:
+            # Linux Cluster
+
+            topologia = self.linuxc_db.get('select * from Topologia where idTopologia=%s;', topology_id)[0]
+            tipo_topologia = topologia['tipo']
+            if debug: print('Tipo de topologia: '+tipo_topologia)
+
+            if tipo_topologia == 'lineal':
+
+                # 1. Crear la(s) red(es) 
+                vlan_id = str(self.linuxc_db.get('select * from Vlan where Topologia_idTopologia=%s', topology_id)[0]['idVlan'])
+                nombre = topologia['nombre']
+                red = "192.168."+vlan_id+".0/24"
+                gateway = "192.168."+vlan_id+".1"
+                gateway_w_netmask = "192.168."+vlan_id+".1/24"
+                dhcp_ip = "192.168."+vlan_id+".2/24"
+                dhcp_range = "192.168."+vlan_id+".10,192.168."+vlan_id+".254,255.255.255.0"
+
+                if debug: print('delete_network.sh [%s, %s, %s, %s, %s, %s, %s]' % (nombre+str(vlan_id), vlan_id, red, gateway, dhcp_ip, dhcp_range, gateway_w_netmask))
+                self.linuxc_controller.ejecutar_script_local('./modulos/driver/bash_scripts/delete_network.sh', [nombre+str(vlan_id), vlan_id, red, gateway, dhcp_ip, dhcp_range, gateway_w_netmask])
+
+                vms = self.linuxc_db.get('select * from VM where Topologia_idTopologia=%s', topology_id)
+                for vm in vms:
+                    self.eliminar_nodo(topology_id, int(vm['idVM']))
+
+                if debug: print("DELETE FROM Topologia_has_Worker where Topologia_idTopologia=%s" % (topology_id))
+                self.linuxc_db.save("DELETE FROM Topologia_has_Worker where Topologia_idTopologia=%s", (topology_id))
+
+                if debug: print("DELETE FROM Vlan where Topologia_idTopologia=%s" % (topology_id ))
+                self.linuxc_db.save("DELETE FROM Vlan where Topologia_idTopologia=%s", (topology_id))
+
+                if debug: print("DELETE FROM Topologia where idTopologia=%s" % (topology_id))
+                self.linuxc_db.save("DELETE FROM Topologia where idTopologia=%s", (topology_id))
+                
+        elif topology_id < 2000:
+            pass
+
+        print('\n[-] Se eliminó topologia correctamente')
+        return {
+            'valor': 6,
+            'mensaje': 'Topologia eliminada correctamente | '+str(topologia)
+        }
 
     # Funciones pendientes
     
@@ -1075,12 +1129,7 @@ class Driver():
         '''
         return self.workers_info()['openstack']
 
-    def eliminar_topologia(self, id_topologia) -> dict:
-        print('\n[-] Se eliminó correctamente')
-        return {
-            'valor': 6,
-            'mensaje': 'Topologia eliminada correctamente'
-        }
+    
 
     def crear_vm(self, data) -> dict:
         print('[+] VM creada correctamente')
