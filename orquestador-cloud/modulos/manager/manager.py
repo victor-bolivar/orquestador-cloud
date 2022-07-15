@@ -123,7 +123,7 @@ class Manager:
                     "internet": True
                 }
         #print(self.driver.recursos_suficientes_nodo(data_nodo))
-        print(self.driver.agregar_nodo(data_nodo, debug=True))
+        #print(self.driver.agregar_nodo(data_nodo, debug=True))
 
     # Opciones del menu principal
 
@@ -318,9 +318,13 @@ class Manager:
 
             elif (opcion == 4):
                 # 1. se listan las topologias y se pide el ID
-                self.driver.listar_topologias()
+                topology_list = self.driver.listar_topologias()
                 id_topologia = self.validador.obtener_int(
                     '\nIngrese el ID de la topologia: ')
+                # Se verifica que sea un ID que exista
+                if not any(topologia['idTopologia'] == id_topologia for topologia in topology_list):
+                    raise InputException()
+                
                 if(id_topologia):
                     print()
                     # 2. se listan los workers actuales en la topologia
@@ -328,11 +332,14 @@ class Manager:
                     
                     # 3. se obtiene de la db un resumen de las metricas de los workers y los IDs de workers para esa infraestructura
                     workers_info = self.driver.workers_info_slice(id_topologia)
-                    workers_ids = ['1001', '1002', '1003'] # TODO
+                    if id_topologia < 1000:
+                        workers_ids = ['1', '2', '3']
+                    elif id_topologia < 2000:
+                        workers_ids = ['1001', '1002', '1003'] 
                     # 4. se pide al usuario que workers desea añadir
-                    data = self.validador.aumentar_slice(workers_info, workers_ids)
+                    id_workers_agregar = self.validador.aumentar_slice(workers_info, workers_ids)
                     # 5. se añade los workers al slice
-                    result = self.driver.aumentar_slice(data)
+                    result = self.driver.aumentar_slice(id_workers_agregar, id_topologia)
                     self.logging.log(result)
                 else:
                     raise InputException()

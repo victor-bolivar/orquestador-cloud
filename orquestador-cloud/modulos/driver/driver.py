@@ -331,6 +331,13 @@ class Driver():
         return recursos_suficientes
 
     def listar_topologias(self) -> None:
+        ''' 
+            Hace dos cosas:
+            1. Imprime la tabla que arma con un objeto PrettyTable()
+            2. Arma una lista de diccionarios con la data
+        '''
+        list_topology = []
+
         # obtener data de la db
         linuxc_db = self.linuxc_db.obtener_topologias()
         openstack_db = self.openstack_db.obtener_topologias()
@@ -339,12 +346,26 @@ class Driver():
         x.field_names = ["ID", "Nombre", "Tipo", "Infraestructura"]
         for row in linuxc_db:
             x.add_row([row['idTopologia'], row['nombre'], row['tipo'], 'Linux Cluster'])
+            list_topology.append({
+                'idTopologia':row['idTopologia'], 
+                'nombre': row['nombre'], 
+                'tipo': row['tipo'], 
+                'infraestructura': 'Linux Cluster'
+            })
         for row in openstack_db:
             x.add_row([row['idTopologia'], row['nombre'], row['tipo'], 'OpenStack'])
+            list_topology.append({
+                'idTopologia':row['idTopologia'], 
+                'nombre': row['nombre'], 
+                'tipo': row['tipo'], 
+                'infraestructura': 'OpenStack'
+            })
         # Espaciado antes de imprimar la tabla
         x = '\n' + str(x)
         x = x.replace("\n", "\n                ")
         print(x)
+
+        return list_topology
     
     def importar_imagen(self, data) -> dict:
         try: 
@@ -503,6 +524,33 @@ class Driver():
         t = '\n' + str(t)
         t = t.replace("\n", "\n                ")
         print(t)
+
+    def listar_workers_actuales(self, id_topologia) -> None:
+        '''
+            Funcion usada para aumentar la capacidad de un slice.
+
+            Imprime infomacion que contiene una lista de los IDs de los workers que comprende una topologia.
+        '''
+        if id_topologia < 1000:
+            db = self.linuxc_db
+        elif id_topologia < 2000:
+            db = self.openstack_db
+        
+        id_workers = db.get('select Worker_idWorker from Topologia_has_Worker where Topologia_idTopologia = %s', id_topologia)
+        id_workers = [worker['Worker_idWorker'] for worker in id_workers]
+
+        print('Actualmente su topologia cuenta con: '+str(id_workers))
+        print()
+
+    def workers_info_slice(self, id_topologia) -> str:
+        '''
+            A apartir del ID de una topologia, se define que tipo de infraestructura usa y se 
+            devuelve la tabla para esa infraestructura.
+        '''
+        if id_topologia < 1000:
+            return self.workers_info()['linux_cluster']
+        elif id_topologia < 2000:
+            return self.workers_info()['openstack']
 
     # Funciones en desarrollo
 
@@ -1101,43 +1149,46 @@ class Driver():
             'mensaje': 'Topologia eliminada correctamente | '+str(topologia)
         }
 
+    
     # Funciones pendientes
     
-    def listar_workers_actuales(self, id_topologia) -> None:
-        print('Actualmente su topologia cuenta con: '+str(['worker1', 'worker2']))
-        print()
-
-    def workers_info_slice(self, id_topologia) -> str:
+    def aumentar_slice(self, id_workers_agregar, id_topologia) -> dict:
         '''
-            A apartir del ID de una topologia, se define que tipo de infraestructura usa y se 
-            devuelve la tabla para esa infraestructura.
+            id_workers_agregar(list):
+
+                ['1', '2', '3']
+
+            id_topologia(int)
         '''
-        return self.workers_info()['openstack']
 
+        worker_agregados = []
 
-    def crear_vm(self, data) -> dict:
-        print('[+] VM creada correctamente')
-        result = None  # codigo sislog
-        return result
+        if id_topologia < 1000:
+            # Linux Cluster
 
-    def aumentar_slice(self, data) -> dict:
-        print('\n[+] Slice aumentado exitosamente')
-        result = {
-            'valor': 6,
-            'mensaje': 'Slice aumentado exitosamente'
-        }
-        return result
+            workers_actuales = self.linuxc_db.get('select Worker_idWorker from Topologia_has_Worker where Topologia_idTopologia = %s;', id_topologia)
+            workers_actuales = [str(worker['Worker_idWorker']) for worker in workers_actuales] # ['1', '2']
+
+            for id_worker in id_workers_agregar:
+                if id_worker not in workers_actuales:
+                    # si no esta se agrega (si ya esta se ignora)
+                    self.linuxc_db.save("insert into Topologia_has_Worker (Topologia_idTopologia, Worker_idWorker) values (%s, %s)", (id_topologia, id_worker))
+                    worker_agregados.append(id_worker)
+
+            print('\n[+] Slice aumentado exitosamente')
+            result = {
+                'valor': 6,
+                'mensaje': 'Slice aumentado exitosamente | Topologia ID : '+str(id_topologia)+' | Workers agregados : '+str(worker_agregados),
+                'agent': 'linuxcluster'
+            }
+
+        elif id_topologia < 2000:
+            # TODO Openstack
+            pass
 
     def conectar_nodo_internet(self, id_nodo) -> dict:
         print('\n[+] Conexión exitosa')
         return {
             'valor': 6,
             'mensaje': 'Conexion de nodo a internet satisfactoria'
-        }
-
-    def conectar_topologias(self, id_topologia1, id_topologia2) -> dict:
-        print('\n[+] Conexión exitosa')
-        return {
-            'valor': 6,
-            'mensaje': 'Conexion entre slices satisfactorio'
         }
