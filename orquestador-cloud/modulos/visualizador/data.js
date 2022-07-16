@@ -43,22 +43,26 @@ var topologyData = {
         {
             "icon": "server",
             "id": 75,
-            "name": "vm1"
+            "name": "vm1",
+            "tunnel_ssh": "ssh -L  5974:127.0.0.1:5974 acceso_vnc@10.20.12.161 -p 2201"
         },
         {
             "icon": "server",
             "id": 76,
-            "name": "vm2"
+            "name": "vm2",
+            "tunnel_ssh": "ssh -L  5975:127.0.0.1:5975 acceso_vnc@10.20.12.161 -p 2201"
         },
         {
             "icon": "server",
             "id": 77,
-            "name": "vm3"
+            "name": "vm3",
+            "tunnel_ssh": "ssh -L  5976:127.0.0.1:5976 acceso_vnc@10.20.12.161 -p 2201"
         },
         {
             "icon": "server",
             "id": 78,
-            "name": "vmz"
+            "name": "vmz",
+            "tunnel_ssh": "ssh -L  5977:127.0.0.1:5977 acceso_vnc@10.20.12.161 -p 2202"
         },
         {
             "icon": "cloud",

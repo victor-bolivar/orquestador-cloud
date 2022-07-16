@@ -99,10 +99,10 @@
                     content: [
                         {
                             tag: 'label',
-                            content: 'Management: ',
+                            content: 'tunnel_ssh: ',
                         }, {
                             tag: 'label',
-                            content: '{#node.model.Management}',
+                            content: '{#node.model.tunnel_ssh}',
                         }
                     ],
                     props: {

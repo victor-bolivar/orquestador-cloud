@@ -139,7 +139,8 @@ class Manager:
                 2. JSON con detalle de una topología en particular
                 3. Gráfico de topología en particular
                 4. Listar imágenes disponibles
-                5. Regresar
+                5. Listar recursos disponibles
+                6. Regresar
 
             ''')
         opcion = self.validador.obtener_int(
@@ -190,6 +191,16 @@ class Manager:
                 self.driver.listar_imagenes()
 
             elif (opcion == 5):
+                workers = self.driver.workers_info()
+
+                print()
+                print('                Infraestructura: OpenStack \n')
+                print(workers['openstack'])
+                print()
+                print('                Infraestructura: Linux Cluster \n')
+                print(workers['linux_cluster'])
+
+            elif (opcion == 6):
                 pass
         else:
             # Si no se especifico una opcion valida, se procede con el bucle

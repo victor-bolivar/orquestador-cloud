@@ -895,6 +895,7 @@ class Driver():
                 vm_parsed.append({
                     "id": vm["idVM"],
                     "nombre": vm["nombre"],
+                    "workerID": vm['Worker_idWorker'],
                     "imagen": imagen_nombre,
                     "vcpu": int(vm["vCPU"]),
                     "memoria": int(vm["memoria"]),
@@ -956,11 +957,17 @@ class Driver():
                 imagen_id = vm["Imagen_idImagen"]
                 # icono a usar dependiendo de la categoria
                 categoria_imagen = self.linuxc_db.get('select * from Imagen where idImagen=%s', imagen_id)[0]['categoria']
+                # comando para tunel ssh
+                id_interfaz = self.linuxc_db.get('select idInterfaz from Interfaz where VM_idVM=%s LIMIT 1', vm["idVM"])[0]['idInterfaz'] # se toma en cuenta una sola interfaz
+                vnc_port = int(id_interfaz) + 5900
+                comando_tunel = 'ssh -L  %s:127.0.0.1:%s acceso_vnc@10.20.12.161 -p 220%s' % (vnc_port, vnc_port, vm["Worker_idWorker"])
+
                 # se añade
                 vm_parsed.append({
                     "id": vm["idVM"],
                     "name": vm["nombre"],
                     "icon": categoria_imagen,
+                    "tunnel_ssh": comando_tunel
                 })
 
                 # parsear las enlaces
