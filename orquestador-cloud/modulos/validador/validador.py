@@ -122,7 +122,7 @@ class Validador():
                 }
 
         '''
-        nombre = input('\nIngrese el nombre de la topologia: ')
+        nombre = input('\nIngrese el nombre de la topologia (maximo 6 caracteres): ')
         tipo = self.obtener_tipo_topologia()
         infraestructura = self.obtener_infraestructura(workers_info)
         # datos de las 3 VMs a crear (numero predefinido para las topologias predefinidas)
@@ -314,7 +314,8 @@ class Validador():
 
             opcion1: CopyOnWrite FileSystem
                 {
-                    'filesystem': 'CopyOnWrite'
+                    'filesystem': 'CopyOnWrite',
+                    'size': tamaño
                 }
             opcion2: Raw FileSystem
                 {
@@ -329,14 +330,16 @@ class Validador():
         opcion = self.obtener_int(
             'Seleccionar la opción adecuada para su escenario: ', minValor=1, maxValor=2)
         print()
+        tamaño = self.obtener_int(
+                    'Ingresar la cantidad de almacenamiento (Mínimo:1 GB | Máximo: 50 GB): ', minValor=1, maxValor=50)
         if (opcion):
             if(opcion == 1):
                 return {
-                    'filesystem': 'CopyOnWrite'
+                    'filesystem': 'CopyOnWrite',
+                    'size': tamaño
                 }
             elif(opcion == 2):
-                tamaño = self.obtener_int(
-                    'Ingresar la cantidad de almacenamiento (Mínimo:1 GB | Máximo: 50 GB): ', minValor=1, maxValor=50)
+                
                 print()
                 if (tamaño):
                     return {

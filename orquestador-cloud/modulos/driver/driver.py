@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 
 from datetime import datetime
-from traceback import print_tb
 from prettytable import PrettyTable
 import pandas as pd
 import json
-import csv
 import random
 
 from .ssh import SSH
@@ -552,6 +550,42 @@ class Driver():
         elif id_topologia < 2000:
             return self.workers_info()['openstack']
 
+    def aumentar_slice(self, id_workers_agregar, id_topologia) -> dict:
+        '''
+            id_workers_agregar(list):
+
+                ['1', '2', '3']
+
+            id_topologia(int)
+        '''
+
+        worker_agregados = []
+
+        if id_topologia < 1000:
+            # Linux Cluster
+
+            workers_actuales = self.linuxc_db.get('select Worker_idWorker from Topologia_has_Worker where Topologia_idTopologia = %s;', id_topologia)
+            workers_actuales = [str(worker['Worker_idWorker']) for worker in workers_actuales] # ['1', '2']
+
+            for id_worker in id_workers_agregar:
+                if id_worker not in workers_actuales:
+                    # si no esta se agrega (si ya esta se ignora)
+                    self.linuxc_db.save("insert into Topologia_has_Worker (Topologia_idTopologia, Worker_idWorker) values (%s, %s)", (id_topologia, id_worker))
+                    worker_agregados.append(id_worker)
+ 
+
+        elif id_topologia < 2000:
+            # TODO Openstack
+            pass
+
+        print('\n[+] Slice aumentado exitosamente')
+        result = {
+                'valor': 6,
+                'mensaje': 'Slice aumentado exitosamente | Topologia ID : '+str(id_topologia)+' | Workers agregados : '+str(worker_agregados),
+                'agent': 'linuxcluster'
+            }
+        return  result
+
     # Funciones en desarrollo
 
     def agregar_nodo(self, nodo, debug=False) -> dict:
@@ -606,8 +640,8 @@ class Driver():
 
                     ruta_imagen = '/home/w1/imagenes/'+imagen['categoria']+'/'+imagen['nombre']
                     ruta_fs = '/home/w1/filesystems/n'+str(id_vm)+'.qcow2'
-                    if debug: print('worker1 create_vm.sh (%s, %s, %s, %s, %s, %s)' % ("n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs))
-                    self.linuxc_worker1.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs])
+                    if debug: print('worker1 create_vm.sh (%s, %s, %s, %s, %s, %s)' % ("n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs, str(nodo['n_vcpus']), str(nodo['memoria'])+"G", str(nodo['filesystem']['size'])+"G"))
+                    self.linuxc_worker1.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs, str(nodo['n_vcpus']), str(nodo['memoria'])+"G", str(nodo['filesystem']['size'])+"G"])
 
                     print('''[+] Maquina virtual desplegara en Worker 1, 
     Acceda a su maquina estableciendo un tunel SSH para luego conectarse por VNC en localhost
@@ -618,8 +652,8 @@ class Driver():
                     ruta_imagen = '/home/w2/imagenes/'+imagen['categoria']+'/'+imagen['nombre']
                     ruta_fs = '/home/w2/filesystems/n'+str(id_vm)+'.qcow2'
                     vm_identifier = "n"+str(id_vm)
-                    if debug: print('worker2 create_vm.sh (%s, %s, %s, %s, %s, %s)' % (vm_identifier, str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs))
-                    self.linuxc_worker2.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs])
+                    if debug: print('worker2 create_vm.sh (%s, %s, %s, %s, %s, %s)' % (vm_identifier, str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs, str(nodo['n_vcpus']), str(nodo['memoria'])+"G", str(nodo['filesystem']['size'])+"G"))
+                    self.linuxc_worker2.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs, str(nodo['n_vcpus']), str(nodo['memoria'])+"G", str(nodo['filesystem']['size'])+"G"])
 
                     print('''[+] Maquina virtual desplegara en Worker 2, 
     Acceda a su maquina estableciendo un tunel SSH para luego conectarse por VNC en localhost
@@ -629,8 +663,8 @@ class Driver():
 
                     ruta_imagen = '/home/wk3/imagenes/'+imagen['categoria']+'/'+imagen['nombre']
                     ruta_fs = '/home/wk3/filesystems/n'+str(id_vm)+'.qcow2'
-                    if debug: print('worker3 create_vm.sh (%s, %s, %s, %s, %s, %s)' % ("n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs))
-                    self.linuxc_worker3.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs])
+                    if debug: print('worker3 create_vm.sh (%s, %s, %s, %s, %s, %s)' % ("n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs, str(nodo['n_vcpus']), str(nodo['memoria'])+"G", str(nodo['filesystem']['size'])+"G"))
+                    self.linuxc_worker3.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs, str(nodo['n_vcpus']), str(nodo['memoria'])+"G", str(nodo['filesystem']['size'])+"G"])
 
                     print('''[+] Maquina virtual desplegara en Worker 3, 
     Acceda a su maquina estableciendo un tunel SSH para luego conectarse por VNC en localhost
@@ -717,8 +751,8 @@ class Driver():
                         
                         ruta_imagen = '/home/w1/imagenes/'+imagen['categoria']+'/'+imagen['nombre']
                         ruta_fs = '/home/w1/filesystems/n'+str(id_vm)+'.qcow2'
-                        if debug: print('worker1 create_vm.sh (%s, %s, %s, %s, %s, %s)' % ("n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs))
-                        self.linuxc_worker1.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs])
+                        if debug: print('worker1 create_vm.sh (%s, %s, %s, %s, %s, %s)' % ("n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs, str(vm['n_vcpus']), str(vm['memoria'])+"G", str(vm['filesystem']['size'])+"G"))
+                        self.linuxc_worker1.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs, str(vm['n_vcpus']), str(vm['memoria'])+"G", str(vm['filesystem']['size'])+"G"])
                         print('''[+] Maquina virtual desplegara en Worker 1, 
     Acceda a su maquina estableciendo un tunel SSH para luego conectarse por VNC en localhost
     Ejemplo: ssh -L  %s:127.0.0.1:%s acceso_vnc@10.20.12.161 -p 2201''' % (vnc_port, vnc_port))
@@ -730,8 +764,8 @@ class Driver():
                         ruta_imagen = '/home/w2/imagenes/'+imagen['categoria']+'/'+imagen['nombre']
                         ruta_fs = '/home/w2/filesystems/n'+str(id_vm)+'.qcow2'
                         vm_identifier = "n"+str(id_vm)
-                        if debug: print('worker2 create_vm.sh (%s, %s, %s, %s, %s, %s)' % (vm_identifier, str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs))
-                        self.linuxc_worker2.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs])
+                        if debug: print('worker2 create_vm.sh (%s, %s, %s, %s, %s, %s)' % (vm_identifier, str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs, str(vm['n_vcpus']), str(vm['memoria'])+"G", str(vm['filesystem']['size'])+"G"))
+                        self.linuxc_worker2.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs, str(vm['n_vcpus']), str(vm['memoria'])+"G", str(vm['filesystem']['size'])+"G"])
                         print('''[+] Maquina virtual desplegara en Worker 2, 
     Acceda a su maquina estableciendo un tunel SSH al Worker para luego conectarse por VNC en localhost      
     Ejemplo: ssh -L  %s:127.0.0.1:%s acceso_vnc@10.20.12.161 -p 2202''' % (vnc_port, vnc_port))
@@ -740,8 +774,8 @@ class Driver():
 
                         ruta_imagen = '/home/wk3/imagenes/'+imagen['categoria']+'/'+imagen['nombre']
                         ruta_fs = '/home/wk3/filesystems/n'+str(id_vm)+'.qcow2'
-                        if debug: print('worker3 create_vm.sh (%s, %s, %s, %s, %s, %s)' % ("n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs))
-                        self.linuxc_worker3.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs])
+                        if debug: print('worker3 create_vm.sh (%s, %s, %s, %s, %s, %s)' % ("n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs, str(vm['n_vcpus']), str(vm['memoria'])+"G", str(vm['filesystem']['size'])+"G"))
+                        self.linuxc_worker3.ejecutar_script_local('./modulos/driver/bash_scripts/create_vm.sh', ["n"+str(id_vm), str(vlan_id), str(vnc_port), ruta_imagen, mac, ruta_fs, str(vm['n_vcpus']), str(vm['memoria'])+"G", str(vm['filesystem']['size'])+"G"])
                         print('''[+] Maquina virtual desplegara en Worker 3, 
     Acceda a su maquina estableciendo un tunel SSH para luego conectarse por VNC en localhost                     
     Ejemplo: ssh -L  %s:127.0.0.1:%s acceso_vnc@10.20.12.161 -p 2202''' % (vnc_port, vnc_port))
@@ -1159,39 +1193,6 @@ class Driver():
     
     # Funciones pendientes
     
-    def aumentar_slice(self, id_workers_agregar, id_topologia) -> dict:
-        '''
-            id_workers_agregar(list):
-
-                ['1', '2', '3']
-
-            id_topologia(int)
-        '''
-
-        worker_agregados = []
-
-        if id_topologia < 1000:
-            # Linux Cluster
-
-            workers_actuales = self.linuxc_db.get('select Worker_idWorker from Topologia_has_Worker where Topologia_idTopologia = %s;', id_topologia)
-            workers_actuales = [str(worker['Worker_idWorker']) for worker in workers_actuales] # ['1', '2']
-
-            for id_worker in id_workers_agregar:
-                if id_worker not in workers_actuales:
-                    # si no esta se agrega (si ya esta se ignora)
-                    self.linuxc_db.save("insert into Topologia_has_Worker (Topologia_idTopologia, Worker_idWorker) values (%s, %s)", (id_topologia, id_worker))
-                    worker_agregados.append(id_worker)
-
-            print('\n[+] Slice aumentado exitosamente')
-            result = {
-                'valor': 6,
-                'mensaje': 'Slice aumentado exitosamente | Topologia ID : '+str(id_topologia)+' | Workers agregados : '+str(worker_agregados),
-                'agent': 'linuxcluster'
-            }
-
-        elif id_topologia < 2000:
-            # TODO Openstack
-            pass
 
     def conectar_nodo_internet(self, id_nodo) -> dict:
         print('\n[+] Conexión exitosa')

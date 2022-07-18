@@ -3,36 +3,27 @@
 var topologyData = {
     "links": [
         {
-            "mac": "02:00:00:84:dc:ab",
-            "source": 75,
-            "srcDevice": "vm1",
+            "mac": "02:00:00:04:aa:8c",
+            "source": 88,
+            "srcDevice": "a",
             "srcIfName": "link_1",
             "target": -1,
             "tgtDevice": "Bus",
             "tgtIfName": ""
         },
         {
-            "mac": "02:00:00:6a:d4:e7",
-            "source": 76,
-            "srcDevice": "vm2",
+            "mac": "02:00:00:23:26:88",
+            "source": 89,
+            "srcDevice": "b",
             "srcIfName": "link_1",
             "target": -1,
             "tgtDevice": "Bus",
             "tgtIfName": ""
         },
         {
-            "mac": "02:00:00:d3:c4:4a",
-            "source": 77,
-            "srcDevice": "vm3",
-            "srcIfName": "link_1",
-            "target": -1,
-            "tgtDevice": "Bus",
-            "tgtIfName": ""
-        },
-        {
-            "mac": "02:00:00:0c:02:b1",
-            "source": 78,
-            "srcDevice": "vmz",
+            "mac": "02:00:00:13:1d:c9",
+            "source": 90,
+            "srcDevice": "c",
             "srcIfName": "link_1",
             "target": -1,
             "tgtDevice": "Bus",
@@ -42,27 +33,21 @@ var topologyData = {
     "nodes": [
         {
             "icon": "server",
-            "id": 75,
-            "name": "vm1",
-            "tunnel_ssh": "ssh -L  5974:127.0.0.1:5974 acceso_vnc@10.20.12.161 -p 2201"
+            "id": 88,
+            "name": "a",
+            "tunnel_ssh": "ssh -L  5987:127.0.0.1:5987 acceso_vnc@10.20.12.161 -p 2202"
         },
         {
             "icon": "server",
-            "id": 76,
-            "name": "vm2",
-            "tunnel_ssh": "ssh -L  5975:127.0.0.1:5975 acceso_vnc@10.20.12.161 -p 2201"
+            "id": 89,
+            "name": "b",
+            "tunnel_ssh": "ssh -L  5988:127.0.0.1:5988 acceso_vnc@10.20.12.161 -p 2201"
         },
         {
             "icon": "server",
-            "id": 77,
-            "name": "vm3",
-            "tunnel_ssh": "ssh -L  5976:127.0.0.1:5976 acceso_vnc@10.20.12.161 -p 2201"
-        },
-        {
-            "icon": "server",
-            "id": 78,
-            "name": "vmz",
-            "tunnel_ssh": "ssh -L  5977:127.0.0.1:5977 acceso_vnc@10.20.12.161 -p 2202"
+            "id": 90,
+            "name": "c",
+            "tunnel_ssh": "ssh -L  5989:127.0.0.1:5989 acceso_vnc@10.20.12.161 -p 2202"
         },
         {
             "icon": "cloud",

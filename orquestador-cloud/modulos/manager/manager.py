@@ -16,7 +16,7 @@ class Manager:
         self.logging = Logging()
 
         data_lc = {
-            "nombre": "prueba2",
+            "nombre": "test2",
             "tipo": "lineal",
             "infraestructura": {
                 "infraestructura": "Linux Cluster",
@@ -39,7 +39,7 @@ class Manager:
                 },
                 {
                     "nombre": 'vm2',
-                    "n_vcpus": 1,
+                    "n_vcpus": 2,
                     "memoria": 1,
                     "filesystem": {
                         "filesystem": "CopyOnWrite",
